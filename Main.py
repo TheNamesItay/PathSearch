@@ -7,7 +7,7 @@ G = nx.Graph()
 PROBLEM_GRAPH = nx.Graph()
 
 TIMEOUT = 300
-CUTOFF = 3000
+CUTOFF = 300
 FAILURE = -1
 EXPANSION_TIME = 1
 
@@ -169,8 +169,8 @@ def weird_path_search(heuristic):
     start_state = (start_node, start_path, start_available)
     f = (lambda x: function(x, heuristic))
     PROBLEM_GRAPH.add_node(start_state, parent=0)
-    (res, expansions, time) = limited_AStar(start_state, f, goal_check_path)
-    return res[PATH] if res != FAILURE else res
+    res, expansions, time = limited_AStar(start_state, f, goal_check_path)
+    return (res[PATH], expansions, time) if res != FAILURE else (res, expansions, time)
 
 
 def parseVertex(row):
@@ -229,12 +229,19 @@ def get_random_graph(num_of_nodes, prob_of_edge):
     return new_graph
 
 
-def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge, cutoff):
+heuristics = [
+                ["reachables", reachable_nodes_heuristic],
+                ["availables", available_nodes_heuristic],
+                ["connected_degree", largest_connected_group_degree],
+                ["largest_connected", largest_connected_group]
+            ]
+
+
+def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge):
     global CUTOFF
     global G
     global START_NODE
     global PROBLEM_GRAPH
-    CUTOFF = cutoff
     total_runtime = [0] * len(heuristic_name_func_pairs)
     total_path_length = [0] * len(heuristic_name_func_pairs)
     for run_index in range(runs):
@@ -242,14 +249,14 @@ def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge,
         print(f"**** RUN NUMBER {run_index}")
         h_index = 0
         for name, h in heuristic_name_func_pairs:
-            start_time = t.time()
+            # start_time = t.time()
             G = test_graph.copy()
             START_NODE = 0
             PROBLEM_GRAPH = nx.Graph()
-            path = weird_path_search(h)
-            end_time = t.time()
-            print(f"heuristic: {name}, \tpath length: {len(path)}, \truntime: {end_time-start_time}")
-            total_runtime[h_index] += end_time-start_time
+            path, expansions, time = weird_path_search(h)
+            # end_time = t.time()
+            print(f"heuristic: {name}, \tpath length: {len(path)}, \truntime: {time}, \texpansions: {expansions}")
+            total_runtime[h_index] += time
             total_path_length[h_index] += len(path)
             h_index += 1
         print()
@@ -259,12 +266,4 @@ def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge,
         mean_runtime = total_runtime[h_index] / runs
         mean_path_length = total_path_length[h_index] / runs
         print(f"heuristic: {name}, \tmean path length: {mean_path_length}, \tmean runtime: {mean_runtime}")
-
-
-heuristics = [
-                ["reachables", reachable_nodes_heuristic],
-                ["availables", available_nodes_heuristic],
-                ["connected_degree", largest_connected_group_degree],
-                ["largest_connected", largest_connected_group]
-            ]
-test_heuristics(heuristics, 10, 10, 0.5, 700)
+test_heuristics(heuristics, 10, 1000, 0.1)
