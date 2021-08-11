@@ -1,5 +1,5 @@
 from numpy import random
-from main import run
+from Main import run
 
 LSP = 1
 SNAKE = 2
