@@ -266,4 +266,5 @@ def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge)
         mean_runtime = total_runtime[h_index] / runs
         mean_path_length = total_path_length[h_index] / runs
         print(f"heuristic: {name}, \tmean path length: {mean_path_length}, \tmean runtime: {mean_runtime}")
+
 test_heuristics(heuristics, 10, 1000, 0.1)

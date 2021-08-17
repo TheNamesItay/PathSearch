@@ -381,7 +381,6 @@ def run():
 
 def get_random_graph(num_of_nodes, prob_of_edge):
     global TARGET_NODE
-    new_graph = []
     path = []
     while True:
         new_graph = nx.fast_gnp_random_graph(num_of_nodes, prob_of_edge)
