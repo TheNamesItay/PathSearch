@@ -34,6 +34,7 @@ def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge,
     sum_path_lengths = dict.fromkeys(names, 0)
     graph_i = 0
     for graph, start, target in graphs:
+        print()
         print(f"GRAPH {graph_i}:")
         graph_i += 1
         for name, h in heuristic_name_func_pairs:
@@ -53,9 +54,9 @@ def test_heuristics(heuristic_name_func_pairs, runs, num_of_nodes, prob_of_edge,
 
 
 heuristics = [
-    ["reachables", reachable_nodes_heuristic],
-    ["bcc nodes", count_nodes_bcc],
-    ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox]
+    # ["reachables", reachable_nodes_heuristic],
+    # ["bcc nodes", count_nodes_bcc],
+    # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
+    ["shimony pairs heuristics", shimony_pairs_bcc]
 ]
-test_heuristics(heuristics, 1, 100, 0.3, 500, 500)
-
+test_heuristics(heuristics, 5, 60, 0.3, 30, 500)

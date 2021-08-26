@@ -59,6 +59,7 @@ def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
         if m > 2:
             return True
         ret = False
+
         for path in paths[m]:
             if paths_disjoint(path[1:], combined):
                 ret = can_combine_paths(m+1, paths, combined + path[1:])
@@ -76,6 +77,7 @@ def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
 
 def shimony_pairs(graph, in_node, out_node):
     counter = 1     # first pair is in and out nodes
+
     for x1 in graph.nodes:
         if x1 == in_node or x1 == out_node:
             continue
@@ -121,6 +123,53 @@ def bcc_thingy(state, G, target):
         current_comp = -1
         for comp in bcc_dict[path[i]]:
            for comp2 in  bcc_dict[path[i+1]]:
+               if comp == comp2:
+                   current_comp = comp
+        if current_comp == -1:
+            raise ConnectionError()
+        # print(f"node - {path[i]}\tcomp - {bcc_dict[path[i]]}\t\tcurrent comp - {current_comp}")
+        if current_comp != added_comp:
+            relevant_comps += [bcc_comps[current_comp]]
+            relevant_comps_index += [current_comp]
+            added_comp = current_comp
+
+    return reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node
+
+
+def bcc_thingy2(state, G, target):
+    current_node = state[CURRENT_NODE]
+    availables = state[AVAILABLE_NODES] + (current_node,)
+    nested = G.subgraph(availables)
+    reachables = nx.descendants(nested, source=current_node)
+    reachables.add(current_node)
+    reach_nested = nested.subgraph(availables)
+    bcc_comps = list(nx.biconnected_components(reach_nested))
+    path = []
+    if target in reachables:
+        path = nx.shortest_path(reach_nested, source=current_node, target=target)
+        if len(path) < 2:
+            return -1, -1, -1, -1, -1, -1
+    else:
+        return -1, -1, -1, -1, -1, -1
+
+    bcc_dict = {}
+    for node in reachables:
+        bcc_dict[node] = []
+    comp_index = 0
+    for comp in bcc_comps:
+        for node in comp:
+            # mapping nodes to biconnected comp
+            bcc_dict[node] += [comp_index]
+        comp_index += 1
+
+    relevant_comps = []
+    relevant_comps_index = []
+    added_comp = -1
+    # getting only relevant components
+    for i in range(len(path)-1):
+        current_comp = -1
+        for comp in bcc_dict[path[i]]:
+           for comp2 in bcc_dict[path[i+1]]:
                if comp == comp2:
                    current_comp = comp
         if current_comp == -1:
@@ -188,7 +237,8 @@ def component_degree(comp, graph):
 
 
 def shimony_pairs_bcc_aprox(state, G, target):
-    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state)
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
     if relevant_comps == -1:
         return len(G.nodes) ** 2  # no path
     cut_node_dict = {}

@@ -1,6 +1,8 @@
 import networkx as nx
 import time as t
 import matplotlib.pyplot as plt
+import random
+from orginized.helper_functions import *
 
 
 def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
@@ -50,21 +52,26 @@ def shimony_pairs(graph, in_node, out_node):
     return counter
 
 
-graph = nx.Graph()
+# graph = nx.Graph()
+#
+# graph.add_node(1)
+# graph.add_node(2)
+# graph.add_node(3)
+# graph.add_node(4)
+# graph.add_node(5)
+# graph.add_node(6)
+#
+# graph.add_edge(1,2)
+# graph.add_edge(3,2)
+# graph.add_edge(3,4)
+# graph.add_edge(5,4)
+# graph.add_edge(5,6)
+#
+# graph.add_edge(1,6)
+#
+# print(random.uniform(0,1))
 
-graph.add_node(1)
-graph.add_node(2)
-graph.add_node(3)
-graph.add_node(4)
-graph.add_node(5)
-graph.add_node(6)
+grid = generate_grid(10, 10, 0.2)
+print(list(grid.nodes))
 
-graph.add_edge(1,2)
-graph.add_edge(3,2)
-graph.add_edge(3,4)
-graph.add_edge(5,4)
-graph.add_edge(5,6)
-
-graph.add_edge(1,6)
-
-print(shimony_pairs(graph, 1, 3))
+display_grid([], grid)
