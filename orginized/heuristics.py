@@ -1,6 +1,5 @@
 import networkx as nx
 
-
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
 PATH = 1
@@ -26,7 +25,7 @@ def reachable_nodes_heuristic(state, G, target):
     return len(reachables) if target in reachables else N
 
 
-N = -1
+N = 10000
 
 
 def longest_shortest_path(state, G, target):
@@ -62,7 +61,7 @@ def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
 
         for path in paths[m]:
             if paths_disjoint(path[1:], combined):
-                ret = can_combine_paths(m+1, paths, combined + path[1:])
+                ret = can_combine_paths(m + 1, paths, combined + path[1:])
             if ret:
                 break
         return ret
@@ -76,7 +75,7 @@ def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
 
 
 def shimony_pairs(graph, in_node, out_node):
-    counter = 1     # first pair is in and out nodes
+    counter = 1  # first pair is in and out nodes
 
     for x1 in graph.nodes:
         if x1 == in_node or x1 == out_node:
@@ -119,12 +118,12 @@ def bcc_thingy(state, G, target):
     relevant_comps_index = []
     added_comp = -1
     # getting only relevant components
-    for i in range(len(path)-1):
+    for i in range(len(path) - 1):
         current_comp = -1
         for comp in bcc_dict[path[i]]:
-           for comp2 in  bcc_dict[path[i+1]]:
-               if comp == comp2:
-                   current_comp = comp
+            for comp2 in bcc_dict[path[i + 1]]:
+                if comp == comp2:
+                    current_comp = comp
         if current_comp == -1:
             raise ConnectionError()
         # print(f"node - {path[i]}\tcomp - {bcc_dict[path[i]]}\t\tcurrent comp - {current_comp}")
@@ -166,12 +165,12 @@ def bcc_thingy2(state, G, target):
     relevant_comps_index = []
     added_comp = -1
     # getting only relevant components
-    for i in range(len(path)-1):
+    for i in range(len(path) - 1):
         current_comp = -1
         for comp in bcc_dict[path[i]]:
-           for comp2 in bcc_dict[path[i+1]]:
-               if comp == comp2:
-                   current_comp = comp
+            for comp2 in bcc_dict[path[i + 1]]:
+                if comp == comp2:
+                    current_comp = comp
         if current_comp == -1:
             raise ConnectionError()
         # print(f"node - {path[i]}\tcomp - {bcc_dict[path[i]]}\t\tcurrent comp - {current_comp}")
@@ -208,6 +207,9 @@ def shimony_pairs_bcc(state, G, target):
                 cut_node_dict[(c2, c1)] = node
 
     n = len(relevant_comps)
+    if n < 3:
+        return 0
+
     in_pairs = 0
     for i in range(n):
         comp = relevant_comps[i]
@@ -215,16 +217,16 @@ def shimony_pairs_bcc(state, G, target):
         if i == 0:
             in_node = current_node
         else:
-            in_node = cut_node_dict[(relevant_comps_index[i-1], relevant_comps_index[i])]
-        if i == n-1:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
             out_node = target
         else:
-            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i+1])]
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
         in_pairs += shimony_pairs(reach_nested.subgraph(comp), in_node, out_node)
 
     inter_pairs = 0
     for i in range(n):
-        for j in range(i+1, n):
+        for j in range(i + 1, n):
             # for every two nodes in different there's a path from start to target that visits them
             inter_pairs += len(relevant_comps[i]) * len(relevant_comps[j])
 
@@ -251,7 +253,7 @@ def shimony_pairs_bcc_aprox(state, G, target):
     in_pairs = sum(nodes_per_comp)
     inter_pairs = 0
     for i in range(n):
-        for j in range(i+1, n):
+        for j in range(i + 1, n):
             # for every two nodes in different there's a path from start to target that visits them
             inter_pairs += len(relevant_comps[i]) * len(relevant_comps[j])
 
@@ -259,5 +261,6 @@ def shimony_pairs_bcc_aprox(state, G, target):
 
 
 def function(state, heuristic, G, target):
-    res = g(state) + heuristic(state, G, target)
-    return res
+    # res = g(state) + heuristic(state, G, target)
+    # return res
+    return heuristic(state, G, target)
