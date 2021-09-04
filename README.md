@@ -21,7 +21,7 @@ h(state) = largest connected component between the available nodes
 
 
 ## A* algorithm
-####A*(problem_graph, start_state, f, goal_check, cutoff, timeout):
+#### A*(problem_graph, start_state, f, goal_check, cutoff, timeout):
 ####  expansions = 0
 ####  state = start_state
 ####  OPEN = [start_state]
