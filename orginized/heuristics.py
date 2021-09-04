@@ -185,7 +185,7 @@ def bcc_thingy2(state, G, target):
 def count_nodes_bcc(state, G, target):
     _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
     if relevant_comps == -1:
-        return len(G.nodes) ** 2  # if theres no path
+        return len(G.nodes) + 1  # if theres no path
     ret = 0
     for comp in relevant_comps:
         ret += len(comp)

@@ -57,22 +57,24 @@ def limited_AStar(G, start_state, f, goal_check, expand=expand_with_constraints,
     CLOSED = []
     expanded = []
     nodes_extracted_heuristic_values = []
+    nodes_extracted_path_len = []
     best_state = start_state
     while True:
-        if expansion % 100 == 0:
+        if expansion % 10 == 0:
             print(expansion, end=' ')
         if not OPEN:
             end_time = t.time() - start_time
-            return best_state, expansion, end_time, nodes_extracted_heuristic_values
+            return best_state, expansion, end_time, nodes_extracted_heuristic_values, nodes_extracted_path_len
         OPEN = sorted(OPEN, key=f)
         node = OPEN.pop(0)
         if len(node[PATH]) > len(best_state[PATH]):
             best_state = node
         if (t.time() - start_time > timeout > 0) or (0 < cutoff == expansion) or goal_check(node, G):
             end_time = t.time() - start_time
-            return best_state, expansion, end_time, nodes_extracted_heuristic_values
+            return best_state, expansion, end_time, nodes_extracted_heuristic_values, nodes_extracted_path_len
         if checkIfWorthOpen(CLOSED, node, f):
             nodes_extracted_heuristic_values += [f(node)]
+            nodes_extracted_path_len += [len(node[PATH])]
             CLOSED.append(node)
             nodes = expand(node, expanded, G)
             expanded += nodes
