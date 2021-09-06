@@ -20,7 +20,7 @@ h(state) = sum of degree(bcc) for bcc in P
 
 #### exclusion pairs::
 (u,v) is an exclusion pair for graph g, nodes x,y if theres no path in g from x to y through u,v
-
+h(state) = sum of degree(bcc) for bcc in P
 
 
 
