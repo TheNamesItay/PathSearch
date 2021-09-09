@@ -25,7 +25,7 @@ h(state) = sum of degree(bcc) for bcc in P
 
 
 ## A* algorithm
-####A*(problem_graph, start_state, f, goal_check, cutoff, timeout):
+#### A*(problem_graph, start_state, f, goal_check, cutoff, timeout):
 expansions = 0  
 state = start_state  
 OPEN = [start_state]
@@ -38,6 +38,7 @@ if OPEN is empty:
 return state (should be failure probably)
 
 sort(OPEN, f)
+state = pop(OPEN)
 
 if expansions = cutoff or timeout reached:  
 return state (not sure if should be failure)
