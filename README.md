@@ -24,7 +24,8 @@ h(state) = sum of degree(bcc) for bcc in P
 
 
 
-## A* algorithm
+## A* algorithm  
+state = (current node, path, available nodes)  
 #### A*(problem_graph, start_state, f, goal_check, cutoff, timeout):
 expansions = 0  
 state = start_state  
