@@ -38,13 +38,14 @@ while True:
 if OPEN is empty:  
 return state (should be failure probably)
 
-sort(OPEN, f)
-state = pop(OPEN)
-
 if expansions = cutoff or timeout reached:  
 return state (not sure if should be failure)
 
-if shouldExpand(CLOSED, state, f):  
+if goal reached:  
+return state (not sure if should be failure)
+
+sort(OPEN, f)
+state = smart_pop(OPEN)
 CLOSED += [state]  
 nodes = expand(problem_graph, state, expanded)  
 expanded += nodes  
