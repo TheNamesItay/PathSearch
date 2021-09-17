@@ -41,7 +41,7 @@ return state (should be failure probably)
 if expansions = cutoff or timeout reached:  
 return state (not sure if should be failure)
 
-sort(OPEN, f)
+sort(OPEN, f)  
 state = smart_pop(OPEN)
 
 if goal reached:  
