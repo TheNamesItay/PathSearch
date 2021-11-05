@@ -4,8 +4,7 @@ from heuristics import *
 from helper_functions import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
-from lazy_a_star import max_lazy_a_star as lazy_a_star
-
+from lazy_a_star import max_lazy_a_star as lazy_a_star, F_VALUE, STRENGTH
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
@@ -16,7 +15,9 @@ AVAILABLE_NODES = 2
 def get_goal_func(target):
     def goal_check_path(state, graph):  # graph is original graph of nodes!
         return state[CURRENT_NODE] == target
+
     return goal_check_path
+
 
 
 def run(heuristic, graph, start, target, cutoff, timeout):
@@ -24,7 +25,12 @@ def run(heuristic, graph, start, target, cutoff, timeout):
     start_path = (start,)
     start_state = (start, start_path, start_available)
     f = (lambda x: function(x, heuristic, graph, target))
-    end_state, expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = astar(graph, start_state, f, get_goal_func(target), cutoff=cutoff, timeout=timeout)
+    end_state, expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = astar(graph,
+                                                                                                       start_state, f,
+                                                                                                       get_goal_func(
+                                                                                                           target),
+                                                                                                       cutoff=cutoff,
+                                                                                                       timeout=timeout)
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
 
 
@@ -91,9 +97,6 @@ heuristics = [
     ["sp heuristics", shimony_pairs_bcc],
     ["sp heuristics 2", shimony_pairs_bcc2]
 ]
-
-
-
 
 test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.5))
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))

@@ -14,29 +14,15 @@ STRENGTH = 0
 F_VALUE = 1
 
 
-def weak_h(state):
-    return 0
-
-
-def strong_h(state):
-    return 0
-
-
-def g(state):
-    return 0
-
-
-def is_goal(state):
-    return F[state] == 0 or len(state[PATH]) == MAX_PATH_LEN
-
-
-def state_value(state):
+def state_value(state, weak_h, g):
+    global F
     if state not in F.keys():
         F[state] = ('weak', weak_h(state) + g(state))
     return F[state][F_VALUE]
 
 
-def set_to_strong_state_value(state):
+def set_to_strong_state_value(state, strong_h, g):
+    global F
     if state not in F.keys() or not F[state][STRENGTH] == 'strong':
         F[state] = ('strong', strong_h(state) + g(state))
     # return F[state][F_VALUE]
@@ -59,7 +45,10 @@ def expand_with_constraints(state, OPEN, CLOSED, G):
     return ret
 
 
-def max_lazy_a_star(G, start_state, f, is_goal, expand=expand_with_constraints):
+def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints):
+    def get_state_value(state):
+        return state_value(state, weak_h, g)
+
     OPEN = [start_state]
     CLOSED = []
     q = None
@@ -67,15 +56,15 @@ def max_lazy_a_star(G, start_state, f, is_goal, expand=expand_with_constraints):
     while OPEN:
         found = False
         while not found:
-            q = max(OPEN, key=state_value)
-            if is_goal(q):
-                return q
+            q = max(OPEN, key=get_state_value)
             # if we computed the weak heuristic, we need to compute the strong heuristic
             if F[q][STRENGTH] == 'strong':
                 OPEN.remove(q)
                 found = True
             else:
-                set_to_strong_state_value(q)
+                set_to_strong_state_value(q, strong_h, g)
+        if is_goal(q):
+            return q
         OPEN += expand(q, OPEN, CLOSED, G)
         expansions += 1
         CLOSED += [q]
