@@ -2,8 +2,9 @@ import networkx as nx
 import time as t
 from heuristics import *
 from helper_functions import *
-from astar import limited_AStar as astar
+# from astar import limited_AStar as astar
 from astar import FAILURE
+from lazy_a_star import max_lazy_a_star as lazy_a_star
 
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
