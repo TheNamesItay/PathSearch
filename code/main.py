@@ -4,7 +4,7 @@ from heuristics import *
 from helper_functions import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
-from lazy_a_star import max_lazy_a_star as lazy_a_star, F_VALUE, STRENGTH
+from lazy_a_star import max_a_star, max_lazy_a_star
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
@@ -25,12 +25,13 @@ def run(heuristic, graph, start, target, cutoff, timeout):
     start_path = (start,)
     start_state = (start, start_path, start_available)
     f = (lambda x: function(x, heuristic, graph, target))
-    end_state, expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = astar(graph,
-                                                                                                       start_state, f,
-                                                                                                       get_goal_func(
-                                                                                                           target),
-                                                                                                       cutoff=cutoff,
-                                                                                                       timeout=timeout)
+    end_state, data = max_a_star(graph,
+                   start_state, f,
+                   get_goal_func(
+                       target),
+                   cutoff=cutoff,
+                   timeout=timeout)
+    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = data
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
 
 
@@ -94,8 +95,8 @@ heuristics = [
     # ["availables", available_nodes_heuristic],
     ["bcc nodes", count_nodes_bcc],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
-    ["sp heuristics", shimony_pairs_bcc],
-    ["sp heuristics 2", shimony_pairs_bcc2]
+    ["easy nodeds", easy_ex_nodes],
+    # ["sp heuristics 2", shimony_pairs_bcc2]
 ]
 
 test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.5))
