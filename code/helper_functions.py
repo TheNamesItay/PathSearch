@@ -122,3 +122,4 @@ def generate_grid(height, width, block_p):
 
 def generate_grids(num_of_runs, height, width, block_p):
     return [generate_grid(height, width, block_p) for i in range(num_of_runs)]
+

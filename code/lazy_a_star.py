@@ -48,7 +48,6 @@ def expand_with_constraints(state, OPEN, CLOSED, G):
 def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints):
     def get_state_value(state):
         return state_value(state, weak_h, g)
-
     OPEN = [start_state]
     CLOSED = []
     q = None

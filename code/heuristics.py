@@ -4,6 +4,7 @@ import networkx as nx
 CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
+NUM_OF_PAIRS = 5
 
 
 def g(state):
@@ -258,3 +259,4 @@ def shimony_pairs_bcc2(state, G, target):
         in_pairs += count_pairs_from_paths(reach_nested.subgraph(comp), in_node, out_node)
 
     return in_pairs
+
