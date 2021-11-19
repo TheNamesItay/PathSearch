@@ -4,7 +4,7 @@ from heuristics import *
 from helper_functions import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
-from lazy_a_star import max_lazy_a_star as lazy_a_star, F_VALUE, STRENGTH
+from lazy_a_star import max_a_star, max_lazy_a_star
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
@@ -13,24 +13,23 @@ AVAILABLE_NODES = 2
 
 
 def get_goal_func(target):
-    def goal_check_path(state, graph):  # graph is original graph of nodes!
+    def goal_check_path(state):  # graph is original graph of nodes!
         return state[CURRENT_NODE] == target
 
     return goal_check_path
-
 
 
 def run(heuristic, graph, start, target, cutoff, timeout):
     start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
     start_path = (start,)
     start_state = (start, start_path, start_available)
-    f = (lambda x: function(x, heuristic, graph, target))
-    end_state, expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = astar(graph,
-                                                                                                       start_state, f,
-                                                                                                       get_goal_func(
-                                                                                                           target),
-                                                                                                       cutoff=cutoff,
-                                                                                                       timeout=timeout)
+    h = (lambda x: heuristic(x, graph, target))
+    g = (lambda x: len(x[PATH]))
+    end_state, data = max_a_star(graph,
+                                 start_state,
+                                 get_goal_func(target),
+                                 h, g)
+    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = data
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
 
 
@@ -76,7 +75,7 @@ def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
     for name, _ in heuristic_name_func_pairs:
         print(name, hs_per_run[name][graph_i])
         plt.plot(range(len(hs_per_run[name][graph_i])), hs_per_run[name][graph_i], label=f"hs - {name}")
-        plt.plot(range(len(pl_per_run[name][graph_i])), pl_per_run[name][graph_i], label=f"pl - {name}")
+        # plt.plot(range(len(pl_per_run[name][graph_i])), pl_per_run[name][graph_i], label=f"pl - {name}")
     plt.legend()
     plt.show()
 
@@ -94,8 +93,8 @@ heuristics = [
     # ["availables", available_nodes_heuristic],
     ["bcc nodes", count_nodes_bcc],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
-    ["sp heuristics", shimony_pairs_bcc],
-    ["sp heuristics 2", shimony_pairs_bcc2]
+    ["easy nodes", easy_ex_nodes],
+    # ["sp heuristics 2", shimony_pairs_bcc2]
 ]
 
 test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.5))
