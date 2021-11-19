@@ -79,7 +79,7 @@ def bcc_thingy(state, G, target):
 def count_nodes_bcc(state, G, target):
     _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
     if relevant_comps == -1:
-        return len(G.nodes) + 1  # if theres no path
+        return -1  # if theres no path
     ret = 0
     for comp in relevant_comps:
         ret += len(comp)
@@ -260,3 +260,47 @@ def shimony_pairs_bcc2(state, G, target):
 
     return in_pairs
 
+
+def count_easy_shimony_nodes(G, in_node, out_node):
+    g = G.copy()
+    g.remove_node(in_node)
+    g.remove_node(out_node)
+    comps = list(nx.connected_components(G))
+    if len(comps) > 1:
+        print("hiiiiiiiiiiiiiiiiiiiiiiii")
+    return len(max(comps, key=len))
+
+
+def easy_ex_nodes(state, G, target):
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
+    if relevant_comps == -1:
+        return -1  # no path
+    cut_node_dict = {}
+    for node in reachables:
+        comps = bcc_dict[node]
+        # if node in more than 1 component, its a cut node
+        if len(comps) > 1:
+            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+                cut_node_dict[(c1, c2)] = node
+                cut_node_dict[(c2, c1)] = node
+
+    n = len(relevant_comps)
+    if n < 3:
+        return 0
+
+    good_nodes = 0
+    for i in range(n):
+        comp = relevant_comps[i]
+        # getting cut nodes
+        if i == 0:
+            in_node = current_node
+        else:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
+            out_node = target
+        else:
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        good_nodes += count_easy_shimony_nodes(reach_nested.subgraph(comp), in_node, out_node)
+
+    return good_nodes
