@@ -1,5 +1,4 @@
-from datetime import time
-
+import time as t
 from helper_functions import intersection, diff
 
 F = {}  # state -> weak/strong, F value
@@ -80,27 +79,29 @@ def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_
 
 
 def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
+    global F
     def get_state_value(state):
         return state_value(state, h, g)
-    start_time = time.time()
+    F = {}
+    start_time = t.time()
     h_vals = []
     lens = []
     OPEN = [start_state]
     CLOSED = []
     expansions = 0
     while OPEN:
-        if expansions % 10 == 0:
-            print(expansions, end=' ')
+        if expansions % 100 == 0:
+            print(expansions, end='\r')
 
         q = max(OPEN, key=get_state_value)
         OPEN.remove(q)
 
         h_vals += [get_state_value(q)]
-        lens += [len(q(PATH))]
+        lens += [len(q[PATH])]
 
         if is_goal(q):
-            return q, (expansions, time.time() - start_time, h_vals, lens)
+            return q, (expansions, t.time() - start_time, h_vals, lens)
         OPEN += expand(q, OPEN, CLOSED, G)
         expansions += 1
         CLOSED += [q]
-    return -1, (expansions, time.time() - start_time, h_vals, lens)
+    return -1, (expansions, t.time() - start_time, h_vals, lens)

@@ -13,24 +13,22 @@ AVAILABLE_NODES = 2
 
 
 def get_goal_func(target):
-    def goal_check_path(state, graph):  # graph is original graph of nodes!
+    def goal_check_path(state):  # graph is original graph of nodes!
         return state[CURRENT_NODE] == target
 
     return goal_check_path
-
 
 
 def run(heuristic, graph, start, target, cutoff, timeout):
     start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
     start_path = (start,)
     start_state = (start, start_path, start_available)
-    f = (lambda x: function(x, heuristic, graph, target))
+    h = (lambda x: heuristic(x, graph, target))
+    g = (lambda x: len(x[PATH]))
     end_state, data = max_a_star(graph,
-                   start_state, f,
-                   get_goal_func(
-                       target),
-                   cutoff=cutoff,
-                   timeout=timeout)
+                                 start_state,
+                                 get_goal_func(target),
+                                 h, g)
     expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = data
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
 
@@ -77,7 +75,7 @@ def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
     for name, _ in heuristic_name_func_pairs:
         print(name, hs_per_run[name][graph_i])
         plt.plot(range(len(hs_per_run[name][graph_i])), hs_per_run[name][graph_i], label=f"hs - {name}")
-        plt.plot(range(len(pl_per_run[name][graph_i])), pl_per_run[name][graph_i], label=f"pl - {name}")
+        # plt.plot(range(len(pl_per_run[name][graph_i])), pl_per_run[name][graph_i], label=f"pl - {name}")
     plt.legend()
     plt.show()
 
@@ -95,7 +93,7 @@ heuristics = [
     # ["availables", available_nodes_heuristic],
     ["bcc nodes", count_nodes_bcc],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
-    ["easy nodeds", easy_ex_nodes],
+    ["easy nodes", easy_ex_nodes],
     # ["sp heuristics 2", shimony_pairs_bcc2]
 ]
 
