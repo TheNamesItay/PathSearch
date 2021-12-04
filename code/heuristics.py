@@ -265,9 +265,7 @@ def count_easy_shimony_nodes(G, in_node, out_node):
     g.remove_node(in_node)
     g.remove_node(out_node)
     comps = list(nx.connected_components(G))
-    if len(comps) > 1:
-        print("hiiiiiiiiiiiiiiiiiiiiiiii")
-    return len(max(comps, key=len))
+    return len(max(comps, key=len)) + 1
 
 
 def easy_ex_nodes(state, G, target):
@@ -303,3 +301,23 @@ def easy_ex_nodes(state, G, target):
         good_nodes += count_easy_shimony_nodes(reach_nested.subgraph(comp), in_node, out_node)
 
     return good_nodes
+
+
+def longest_edge_disjoint_path(state, G, target):
+    current_node = state[CURRENT_NODE]
+    availables = state[AVAILABLE_NODES] + (current_node,)
+    nested = G.subgraph(availables)
+    try:
+        return len(max(list(nx.edge_disjoint_paths(nested, current_node, target)), key=len))
+    except Exception as e:
+        return 0
+
+
+def longest_node_disjoint_path(state, G, target):
+    current_node = state[CURRENT_NODE]
+    availables = state[AVAILABLE_NODES] + (current_node,)
+    nested = G.subgraph(availables)
+    try:
+        return len(max(list(nx.disjoint_paths(nested, current_node, target)), key=len))
+    except Exception as e:
+        return 0

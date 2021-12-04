@@ -122,3 +122,33 @@ def generate_grid(height, width, block_p):
 
 def generate_grids(num_of_runs, height, width, block_p):
     return [generate_grid(height, width, block_p) for i in range(num_of_runs)]
+
+
+def get_directed_graph(g):
+    g_new = nx.DiGraph()
+    for node in g.nodes:
+        g_new.add_node(node)
+    for (s,t) in g.edges:
+        node1 = s + t + "'"
+        node2 = s + t + "''"
+        g.add_node(node1)
+        g.add_node(node2)
+        g.add_edge(s, node1)
+        g.add_edge(t, node1)
+        g.add_edge(node2, s)
+        g.add_edge(node2, s)
+        g.add_node(node1, node2)
+    return g_new
+
+
+def get_vertex_disjoint_directed(g):
+    g_ret = nx.DiGraph()
+    for node in g.nodes:
+        node_str = str(node)
+        g_ret.add_node(node_str+"in")
+        g_ret.add_node(node_str+"out")
+        g_ret.add_edge(node_str+"in", node_str+"out")
+    for s,t in g.edges:
+        g_ret.add_edge(str(s)+"out", str(t)+"in")
+    return g_ret
+
