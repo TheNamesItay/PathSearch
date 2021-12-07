@@ -53,9 +53,18 @@ expanded += nodes
 OPEN += nodes  
 expansion += 1
     
-      
-      
-      
+## Exclusion Pairs Heuristic Algorithm
+state = (current node, path, available nodes) 
+
+####exclusion_pair_heuristic_in_b_component(b_component, exclusion_pair_bound)
+    h_val := b_component.size
+    exclusion_pair_graph := create_exclusion_pair_graph(b_component, exclusion_pair_bound)
+    while exclusion_pair_graph is not empty:
+        clique := get_clique(exclusion_pair_graph)
+        h_val := h_val - (clique.size - 1)
+        remove_clique(clique, exclusion_pair_graph)
+    return h_val
+
       
       
       

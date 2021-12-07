@@ -1,5 +1,5 @@
-import time as t
 from helper_functions import intersection, diff
+import time as t
 
 F = {}  # state -> weak/strong, F value
 
@@ -13,13 +13,6 @@ PATH = 1
 AVAILABLE_NODES = 2
 STRENGTH = 0
 F_VALUE = 1
-
-# DATA = (expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len)
-EXPANSIONS = 0
-RUNTIME = 1
-H_VALS = 2
-LENS = 3
-
 
 
 def state_value(state, weak_h, g):
@@ -56,7 +49,6 @@ def expand_with_constraints(state, OPEN, CLOSED, G):
 def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints):
     def get_state_value(state):
         return state_value(state, weak_h, g)
-
     OPEN = [start_state]
     CLOSED = []
     q = None

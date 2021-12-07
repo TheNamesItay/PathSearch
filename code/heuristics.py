@@ -8,6 +8,7 @@ from helper_functions import *
 CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
+NUM_OF_PAIRS = 5
 
 
 def g(state):
@@ -269,7 +270,9 @@ def count_easy_shimony_nodes(G, in_node, out_node):
     g.remove_node(in_node)
     g.remove_node(out_node)
     comps = list(nx.connected_components(G))
-    return len(max(comps, key=len)) + 1
+    if len(comps) > 1:
+        print("hiiiiiiiiiiiiiiiiiiiiiiii")
+    return len(max(comps, key=len))
 
 
 def easy_ex_nodes(state, G, target):
