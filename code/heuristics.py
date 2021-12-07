@@ -2,6 +2,7 @@ import networkx as nx
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 from numpy import sort
+from scipy.optimize import linprog
 
 from helper_functions import *
 
@@ -270,8 +271,8 @@ def count_easy_shimony_nodes(G, in_node, out_node):
     g.remove_node(in_node)
     g.remove_node(out_node)
     comps = list(nx.connected_components(G))
-    if len(comps) > 1:
-        print("hiiiiiiiiiiiiiiiiiiiiiiii")
+    # if len(comps) > 1:
+        # print("hiiiiiiiiiiiiiiiiiiiiiiii")
     return len(max(comps, key=len))
 
 
@@ -337,7 +338,7 @@ def get_dis_pairs(s, t, nodes, good_pairs):
         node1 = nodes[i]
         if node1 == s or node1 == t:
             continue
-        for j in range(i, len(nodes)):
+        for j in range(i+1, len(nodes)):
             node2 = nodes[j]
             if node2 == s or node2 == t:
                 continue
@@ -360,6 +361,59 @@ def has_flow(s, x, y, t, g):
     return flow_value == 3
 
 
+def flow_linear_programming(s, x, y, t, g):
+    nv = len(g.nodes)
+    edges = list(g.edges)
+    ne = len(edges)
+    # objective
+    obj = [-1] * (3 * ne)
+
+    #   edges constraints
+    edges_lhs_ineq = [[1 if i in (j, j + ne, j + 2 * ne) else 0 for i in range(3 * ne)] for j in range(ne)]
+    edges_rhs_ineq = [1] * ne
+
+    #   vertices constraints
+    vertices_lhs_eq_1 = [[1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] + [0] * (2 * ne) for node in g.nodes if node not in (str(s) + "in", str(s) + "out", str(x) + "in", str(x) + "out")]
+    vertices_lhs_eq_2 = [[0] * ne + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] + [0] * ne for node in g.nodes if node not in (str(x) + "in", str(x) + "out", str(y) + "in", str(y) + "out")]
+    vertices_lhs_eq_3 = [[0] * (2 * ne) + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] for node in g.nodes if node not in (str(y) + "in", str(y) + "out", str(t) + "in", str(t) + "out")]
+
+    # s -> x constraint
+    s_out_lhs_eq = [[1 if edges[i] in g.out_edges(str(s) + "out") else 0 for i in range(ne)] + [0] * (2 * ne)]
+    x_in_lhs_eq = [[1 if edges[i] in g.in_edges(str(x) + "in") else 0 for i in range(ne)] + [0] * (2 * ne)]
+
+    # x -> y constraint
+    x_out_lhs_eq = [[0] * ne + [1 if edges[i] in g.out_edges(str(x) + "out") else 0 for i in range(ne)] + [0] * ne]
+    y_in_lhs_eq = [[0] * ne + [1 if edges[i] in g.in_edges(str(y) + "in") else 0 for i in range(ne)] + [0] * ne]
+
+    # y -> t constraint
+    y_out_lhs_eq = [[0] * (2 * ne) + [1 if edges[i] in g.out_edges(str(y) + "out") else 0 for i in range(ne)]]
+    t_in_lhs_eq = [[0] * (2 * ne) + [1 if edges[i] in g.in_edges(str(t) + "in") else 0 for i in range(ne)]]
+
+    #  combined constraints
+    vertices_lhs_eq = vertices_lhs_eq_1 \
+                      + vertices_lhs_eq_2 \
+                      + vertices_lhs_eq_3 \
+                      + s_out_lhs_eq \
+                      + x_in_lhs_eq \
+                      + x_out_lhs_eq \
+                      + y_in_lhs_eq \
+                      + y_out_lhs_eq \
+                      + t_in_lhs_eq
+
+    vertices_rhs_eq = [0] * (3 * (nv - 4)) + [1] * 6
+    print(len(vertices_rhs_eq), len(vertices_lhs_eq))
+
+
+    # bounds
+    bnd = [(0, 1)] * (3 * ne)
+
+    opt = linprog(c=obj, A_ub=edges_lhs_ineq, b_ub=edges_rhs_ineq,
+                  A_eq=vertices_lhs_eq, b_eq=vertices_rhs_eq, bounds=bnd,
+                  method="revised simplex")
+    # print(opt.success)
+    return opt.success
+
+
 def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
     good_pairs = set()
     for path in nx.node_disjoint_paths(graph, s, t):
@@ -369,7 +423,7 @@ def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
                 good_pairs.add((path[i], path[j]))
     g_di = di_graph.copy()
     possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs) ### NOT REALLY DISJOINT
-    ex_pairs = { x: y for x,y in possible_pairs if not has_flow(s, x, y, t, g_di) and not has_flow(s, y, x, t, g_di)}
+    ex_pairs = { x: y for x,y in possible_pairs if not flow_linear_programming(s, x, y, t, g_di) and not flow_linear_programming(s, y, x, t, g_di)}
     print("ex_pairs len: ",len(ex_pairs))
     ep = list(ex_pairs.items())
     counter = 0
@@ -393,7 +447,7 @@ def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
             ex_pairs.pop(get_key(y, ex_pairs))
         except Exception as e:
             pass
-    print("new len: ", len(ex_pairs))
+    print("new len: ", counter)
     return counter
 
 

@@ -97,8 +97,8 @@ heuristics = [
     # ["sp heuristics 2", shimony_pairs_bcc2]
     # ["edge disjoint", longest_edge_disjoint_path],
     # ["node disjoint", longest_node_disjoint_path],
-    ["ex_pairs_using_flow", ex_pairs_using_flow]
+    ["ex_pairs_using_flow", ex_pairs_using_flow],
 ]
 
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.3))
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.5))
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
