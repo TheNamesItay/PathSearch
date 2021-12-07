@@ -1,7 +1,6 @@
 import networkx as nx
 import time as t
 from heuristics import *
-from helper_functions import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
 from lazy_a_star import max_a_star, max_lazy_a_star
@@ -76,6 +75,7 @@ def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
         print(name, hs_per_run[name][graph_i])
         plt.plot(range(len(hs_per_run[name][graph_i])), hs_per_run[name][graph_i], label=f"hs - {name}")
         # plt.plot(range(len(pl_per_run[name][graph_i])), pl_per_run[name][graph_i], label=f"pl - {name}")
+    plt.title('graph '+ str(graph_i))
     plt.legend()
     plt.show()
 
@@ -95,9 +95,10 @@ heuristics = [
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
     # ["easy nodes", easy_ex_nodes],
     # ["sp heuristics 2", shimony_pairs_bcc2]
-    ["edge disjoint", longest_edge_disjoint_path],
-    ["node disjoint", longest_node_disjoint_path]
+    # ["edge disjoint", longest_edge_disjoint_path],
+    # ["node disjoint", longest_node_disjoint_path],
+    ["ex_pairs_using_flow", ex_pairs_using_flow]
 ]
 
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=50, width=50, block_p=0.5))
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.3))
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))

@@ -91,7 +91,7 @@ def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
     expansions = 0
     while OPEN:
         if expansions % 100 == 0:
-            print(expansions, end='\r')
+            print(expansions)
 
         q = max(OPEN, key=get_state_value)
         OPEN.remove(q)

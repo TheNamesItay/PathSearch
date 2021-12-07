@@ -1,6 +1,10 @@
 import networkx as nx
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
+from numpy import sort
+
+from helper_functions import *
+
 CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
@@ -321,3 +325,110 @@ def longest_node_disjoint_path(state, G, target):
         return len(max(list(nx.disjoint_paths(nested, current_node, target)), key=len))
     except Exception as e:
         return 0
+
+
+def get_dis_pairs(s, t, nodes, good_pairs):
+    possible_pairs = []
+    nodes = sort(nodes)
+    for i in range(len(nodes)):
+        node1 = nodes[i]
+        if node1 == s or node1 == t:
+            continue
+        for j in range(i, len(nodes)):
+            node2 = nodes[j]
+            if node2 == s or node2 == t:
+                continue
+            if (node1, node2) in good_pairs:
+                continue
+            possible_pairs += [(node1, node2)]
+    return possible_pairs
+
+
+def has_flow(s, x, y, t, g):
+    g.add_edge("flow_start", str(s) + "out", capacity=1)
+    g.add_edge("flow_start", str(x) + "out", capacity=2)
+    g.add_edge(str(t) + "in", "flow_end", capacity=1)
+    g.add_edge(str(y) + "in", "flow_end", capacity=2)
+    flow_value, flow_dict = nx.maximum_flow(g, "flow_start", "flow_end")
+    g.remove_edge("flow_start", str(s) + "out")
+    g.remove_edge("flow_start", str(x) + "out")
+    g.remove_edge(str(t) + "in", "flow_end")
+    g.remove_edge(str(y) + "in", "flow_end")
+    return flow_value == 3
+
+
+def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
+    good_pairs = set()
+    for path in nx.node_disjoint_paths(graph, s, t):
+        p = len(path)
+        for i in range(p):
+            for j in range(i, p):
+                good_pairs.add((path[i], path[j]))
+    g_di = di_graph.copy()
+    possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs) ### NOT REALLY DISJOINT
+    ex_pairs = { x: y for x,y in possible_pairs if not has_flow(s, x, y, t, g_di) and not has_flow(s, y, x, t, g_di)}
+    print("ex_pairs len: ",len(ex_pairs))
+    ep = list(ex_pairs.items())
+    counter = 0
+    if len(ep) > 0:
+        print(len(ep))
+    for x,y in ep:
+        try:
+            ex_pairs.pop(x)
+            counter += 1
+        except Exception as e:
+            pass
+        try:
+            ex_pairs.pop(y)
+        except Exception as e:
+            pass
+        try:
+            ex_pairs.pop(get_key(x, ex_pairs))
+        except Exception as e:
+            pass
+        try:
+            ex_pairs.pop(get_key(y, ex_pairs))
+        except Exception as e:
+            pass
+    print("new len: ", len(ex_pairs))
+    return counter
+
+
+def ex_pairs_using_flow(state, G, target):
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
+    if relevant_comps == -1 or len(relevant_comps) == 0:
+        return -1  # no path
+    cut_node_dict = {}
+    for node in reachables:
+        comps = bcc_dict[node]
+        # if node in more than 1 component, its a cut node
+        if len(comps) > 1:
+            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+                cut_node_dict[(c1, c2)] = node
+                cut_node_dict[(c2, c1)] = node
+
+    n = len(relevant_comps)
+
+    ex_pairs = 0
+    bcc_path_size = 0
+    for i in range(n):
+        comp = relevant_comps[i]
+        bcc_path_size += len(comp)
+        # getting cut nodes
+        if i == 0:
+            in_node = current_node
+        else:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
+            out_node = target
+        else:
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        graph = reach_nested.subgraph(comp)
+        di_graph = get_vertex_disjoint_directed(graph)
+        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph)
+        ex_pairs += to_add
+        # if to_add > 0:
+        #     print(to_add, len(comp), n)
+    # print('++++++++++++ ', bcc_path_size, ex_pairs)
+    return bcc_path_size - ex_pairs/2

@@ -147,8 +147,17 @@ def get_vertex_disjoint_directed(g):
         node_str = str(node)
         g_ret.add_node(node_str+"in")
         g_ret.add_node(node_str+"out")
-        g_ret.add_edge(node_str+"in", node_str+"out")
+        g_ret.add_edge(node_str+"in", node_str+"out", capacity=5)
     for s,t in g.edges:
-        g_ret.add_edge(str(s)+"out", str(t)+"in")
+        g_ret.add_edge(str(s)+"out", str(t)+"in", capacity=1)
+        g_ret.add_edge(str(t)+"out", str(s)+"in", capacity=1)
     return g_ret
 
+
+def get_key(val, dict):
+    a = list(dict.keys())
+    b = list(dict.values())
+    try:
+        return a[b.index(val)]
+    except Exception as e:
+        return -1
