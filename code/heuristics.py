@@ -23,7 +23,7 @@ def available_nodes_heuristic(state, G, target):
     return left_nodes_num
 
 
-N = 100000
+N = 0
 
 
 def reachable_nodes_heuristic(state, G, target):
@@ -138,49 +138,56 @@ def longest_shortest_path(state, G, target):
         return N + 1
 
 
-def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
-    def find_disjoint_paths(graph, segment):
-        x1 = segment[0]
-        x2 = segment[1]
-        return list(nx.edge_disjoint_paths(graph, x1, x2))
+def find_disjoint_paths(graph, segment):
+    x1 = segment[0]
+    x2 = segment[1]
+    return list(nx.edge_disjoint_paths(graph, x1, x2))
 
-    def paths_disjoint(p1, p2):
-        for x in p1:
-            for y in p2:
-                if x == y:
-                    return False
+
+def paths_disjoint(p1, p2):
+    for x in p1:
+        for y in p2:
+            if x == y:
+                return False
+    return True
+
+
+def can_combine_paths(m, paths, combined):
+    if m > 2:
         return True
+    ret = False
 
-    def can_combine_paths(m, paths, combined):
-        if m > 2:
-            return True
-        ret = False
+    for path in paths[m]:
+        if paths_disjoint(path[1:], combined):
+            ret = can_combine_paths(m + 1, paths, combined + path[1:])
+        if ret:
+            break
+    return ret
 
-        for path in paths[m]:
-            if paths_disjoint(path[1:], combined):
-                ret = can_combine_paths(m + 1, paths, combined + path[1:])
-            if ret:
-                break
-        return ret
 
+def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
     segments = [[in_node, x1], [x1, x2], [x2, out_node]]
     paths = []
     for seg in segments:
         paths += [find_disjoint_paths(graph, seg)]
 
-    return not can_combine_paths(0, paths, [in_node])
+    paths2 = [find_disjoint_paths(graph, [in_node, x2]), paths[1], find_disjoint_paths(graph, [x1, out_node])]
+
+    return not can_combine_paths(0, paths, [in_node]) and not can_combine_paths(0, paths2, [in_node])
 
 
 def shimony_pairs(graph, in_node, out_node):
     counter = 1  # first pair is in and out nodes
-
+    done = []
     for x1 in graph.nodes:
+        done += [x1]
         if x1 == in_node or x1 == out_node:
             continue
         for x2 in graph.nodes:
-            if x2 == in_node or x2 == out_node or x2 == x1:
+            if x2 == in_node or x2 == out_node or x2 in done:
                 continue
             if is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
+                print(x1, x2)
                 counter += 1
     return counter
 
@@ -228,7 +235,7 @@ def count_pairs_from_paths(graph, s, t):
         for i in range(p):
             for j in range(i, p):
                 pairs.add((path[i], path[j]))
-    return len(graph.nodes) * (len(graph.nodes)-1) - len(pairs)
+    return len(graph.nodes) * (len(graph.nodes) - 1) - len(pairs)
 
 
 def shimony_pairs_bcc2(state, G, target):
@@ -272,7 +279,7 @@ def count_easy_shimony_nodes(G, in_node, out_node):
     g.remove_node(out_node)
     comps = list(nx.connected_components(G))
     # if len(comps) > 1:
-        # print("hiiiiiiiiiiiiiiiiiiiiiiii")
+    # print("hiiiiiiiiiiiiiiiiiiiiiiii")
     return len(max(comps, key=len))
 
 
@@ -334,11 +341,17 @@ def longest_node_disjoint_path(state, G, target):
 def get_dis_pairs(s, t, nodes, good_pairs):
     possible_pairs = []
     nodes = sort(nodes)
+    # nodes = [tuple(node) for node in nodes]
+    print(nodes)
     for i in range(len(nodes)):
         node1 = nodes[i]
+        # print(nodes)
+        # print(node1)
+        # # print(tuple(node1))
+        # print(s)
         if node1 == s or node1 == t:
             continue
-        for j in range(i+1, len(nodes)):
+        for j in range(i + 1, len(nodes)):
             node2 = nodes[j]
             if node2 == s or node2 == t:
                 continue
@@ -367,15 +380,26 @@ def flow_linear_programming(s, x, y, t, g):
     ne = len(edges)
     # objective
     obj = [-1] * (3 * ne)
+    # print(g.nodes)
+    # print(f"s: {s}, t: {t}, x: {x}, y: {y}")
 
     #   edges constraints
     edges_lhs_ineq = [[1 if i in (j, j + ne, j + 2 * ne) else 0 for i in range(3 * ne)] for j in range(ne)]
     edges_rhs_ineq = [1] * ne
 
     #   vertices constraints
-    vertices_lhs_eq_1 = [[1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] + [0] * (2 * ne) for node in g.nodes if node not in (str(s) + "in", str(s) + "out", str(x) + "in", str(x) + "out")]
-    vertices_lhs_eq_2 = [[0] * ne + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] + [0] * ne for node in g.nodes if node not in (str(x) + "in", str(x) + "out", str(y) + "in", str(y) + "out")]
-    vertices_lhs_eq_3 = [[0] * (2 * ne) + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] for node in g.nodes if node not in (str(y) + "in", str(y) + "out", str(t) + "in", str(t) + "out")]
+    vertices_lhs_eq_1 = [
+        [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] + [0] * (
+                2 * ne) for node in g.nodes if
+        node not in (str(s) + "in", str(s) + "out", str(x) + "in", str(x) + "out")]
+    vertices_lhs_eq_2 = [
+        [0] * ne + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in
+                    range(ne)] + [0] * ne for node in g.nodes if
+        node not in (str(x) + "in", str(x) + "out", str(y) + "in", str(y) + "out")]
+    vertices_lhs_eq_3 = [
+        [0] * (2 * ne) + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in
+                          range(ne)] for node in g.nodes if
+        node not in (str(y) + "in", str(y) + "out", str(t) + "in", str(t) + "out")]
 
     # s -> x constraint
     s_out_lhs_eq = [[1 if edges[i] in g.out_edges(str(s) + "out") else 0 for i in range(ne)] + [0] * (2 * ne)]
@@ -399,13 +423,14 @@ def flow_linear_programming(s, x, y, t, g):
                       + y_in_lhs_eq \
                       + y_out_lhs_eq \
                       + t_in_lhs_eq
+    # print(len(vertices_lhs_eq_1), len(vertices_lhs_eq_2), len(vertices_lhs_eq_3))
 
     vertices_rhs_eq = [0] * (3 * (nv - 4)) + [1] * 6
-    print(len(vertices_rhs_eq), len(vertices_lhs_eq))
-
+    # print(len(vertices_rhs_eq), len(vertices_lhs_eq))
 
     # bounds
     bnd = [(0, 1)] * (3 * ne)
+    # print("nv", nv, "ne", ne, "len", len(vertices_lhs_eq), len(vertices_rhs_eq))
 
     opt = linprog(c=obj, A_ub=edges_lhs_ineq, b_ub=edges_rhs_ineq,
                   A_eq=vertices_lhs_eq, b_eq=vertices_rhs_eq, bounds=bnd,
@@ -422,14 +447,20 @@ def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
             for j in range(i, p):
                 good_pairs.add((path[i], path[j]))
     g_di = di_graph.copy()
-    possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs) ### NOT REALLY DISJOINT
-    ex_pairs = { x: y for x,y in possible_pairs if not flow_linear_programming(s, x, y, t, g_di) and not flow_linear_programming(s, y, x, t, g_di)}
-    print("ex_pairs len: ",len(ex_pairs))
+    # print(graph.nodes)
+    # print("goooooood", good_pairs)
+    possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs)  ### NOT REALLY DISJOINT
+    ex_pairs = {
+        x: y for x, y in possible_pairs
+        if not flow_linear_programming(s, x, y, t, g_di)
+        and not flow_linear_programming(s, y, x, t, g_di)
+    }
+    print("ex_pairs len: ", len(ex_pairs))
     ep = list(ex_pairs.items())
     counter = 0
     if len(ep) > 0:
         print(len(ep))
-    for x,y in ep:
+    for x, y in ep:
         try:
             ex_pairs.pop(x)
             counter += 1
@@ -487,5 +518,5 @@ def ex_pairs_using_flow(state, G, target):
         ex_pairs += to_add
         # if to_add > 0:
         #     print(to_add, len(comp), n)
-    # print('++++++++++++ ', bcc_path_size, ex_pairs)
-    return bcc_path_size - ex_pairs/2
+    print('++++++++++++ ', bcc_path_size, ex_pairs)
+    return bcc_path_size - ex_pairs
