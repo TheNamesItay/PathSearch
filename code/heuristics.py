@@ -334,11 +334,11 @@ def get_dis_pairs(s, t, nodes, good_pairs):
     possible_pairs = []
     nodes = sort(nodes)
     for i in range(len(nodes)):
-        node1 = nodes[i]
+        node1 = tuple(nodes[i])
         if node1 == s or node1 == t:
             continue
         for j in range(i, len(nodes)):
-            node2 = nodes[j]
+            node2 = tuple(nodes[j])
             if node2 == s or node2 == t:
                 continue
             if (node1, node2) in good_pairs:

@@ -100,5 +100,5 @@ heuristics = [
     ["ex_pairs_using_flow", ex_pairs_using_flow]
 ]
 
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.3))
+# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=15, width=15, block_p=0.3))
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
