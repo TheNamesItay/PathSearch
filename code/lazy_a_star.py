@@ -12,20 +12,28 @@ CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
 STRENGTH = 0
-F_VALUE = 1
+H_VALUE = 1
+G_VALUE = 2
+
+
+# F_VALUE = 1
+
+def get_h_and_g(state):
+    global F
+    return F[state][H_VALUE], F[state][G_VALUE]
 
 
 def state_value(state, weak_h, g):
     global F
     if state not in F.keys():
-        F[state] = ('weak', weak_h(state) + g(state))
-    return F[state][F_VALUE]
+        F[state] = ('weak', weak_h(state), g(state))
+    return F[state][H_VALUE] + F[state][G_VALUE]
 
 
 def set_to_strong_state_value(state, strong_h, g):
     global F
     if state not in F.keys() or not F[state][STRENGTH] == 'strong':
-        F[state] = ('strong', strong_h(state) + g(state))
+        F[state] = ('strong', strong_h(state), g(state))
     # return F[state][F_VALUE]
 
 
@@ -47,8 +55,14 @@ def expand_with_constraints(state, OPEN, CLOSED, G):
 
 
 def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints):
+    global F
     def get_state_value(state):
         return state_value(state, weak_h, g)
+
+    F = {}
+    start_time = t.time()
+    h_vals = []
+    lens = []
     OPEN = [start_state]
     CLOSED = []
     q = None
@@ -63,8 +77,14 @@ def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_
                 found = True
             else:
                 set_to_strong_state_value(q, strong_h, g)
+        if expansions % 1000 == 0:
+            h_val, g_val = get_h_and_g(q)
+            print(f"state pulled from Open: H_val: {h_val}, g_val: {g_val}, f_val: {h_val + g_val}")
+
+        h_vals += [get_state_value(q)]
+        lens += [len(q[PATH])]
         if is_goal(q):
-            return q
+            return q, (expansions, t.time() - start_time, h_vals, lens)
         OPEN += expand(q, OPEN, CLOSED, G)
         expansions += 1
         CLOSED += [q]
@@ -72,8 +92,10 @@ def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_
 
 def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
     global F
+
     def get_state_value(state):
         return state_value(state, h, g)
+
     F = {}
     start_time = t.time()
     h_vals = []
@@ -87,6 +109,9 @@ def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
 
         q = max(OPEN, key=get_state_value)
         OPEN.remove(q)
+        if expansions % 1000 == 0:
+            h_val, g_val = get_h_and_g(q)
+            print(f"state pulled from Open: H_val: {h_val}, g_val: {g_val}, f_val: {h_val + g_val}")
 
         h_vals += [get_state_value(q)]
         lens += [len(q[PATH])]

@@ -135,7 +135,7 @@ def get_directed_graph(g):
     g_new = nx.DiGraph()
     for node in g.nodes:
         g_new.add_node(node)
-    for (s,t) in g.edges:
+    for (s, t) in g.edges:
         node1 = s + t + "'"
         node2 = s + t + "''"
         g.add_node(node1)
@@ -155,7 +155,7 @@ def get_vertex_disjoint_directed(g):
         g_ret.add_node(node_str+"in")
         g_ret.add_node(node_str+"out")
         g_ret.add_edge(node_str+"in", node_str+"out", capacity=5)
-    for s,t in g.edges:
+    for s, t in g.edges:
         g_ret.add_edge(str(s)+"out", str(t)+"in", capacity=1)
         g_ret.add_edge(str(t)+"out", str(s)+"in", capacity=1)
     return g_ret
