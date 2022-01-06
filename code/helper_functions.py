@@ -161,3 +161,16 @@ def get_key(val, dict):
         return a[b.index(val)]
     except Exception as e:
         return -1
+
+
+def print_graph(graph):
+    plt.scatter([x for x, y in graph.nodes], [y for x, y in graph.nodes])
+    # plt.rcParams["figure.figsize"] = [7.50, 3.50]
+    # plt.rcParams["figure.autolayout"] = True
+    for node1, node2 in graph.edges:
+        # print(node1, node2)
+        x_values = [node1[0], node2[0]]
+        y_values = [node1[1], node2[1]]
+        plt.plot(x_values, y_values, 'bo', linestyle='--')
+
+    plt.show()

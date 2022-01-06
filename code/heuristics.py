@@ -3,13 +3,19 @@ import networkx as nx
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 from numpy import sort
 from scipy.optimize import linprog
-
 from helper_functions import *
 
 CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
 NUM_OF_PAIRS = 5
+
+index_to_node = {}
+
+
+def update_index_to_node(itn):
+    global index_to_node
+    index_to_node = itn
 
 
 def g(state):
@@ -85,9 +91,9 @@ def count_nodes_bcc(state, G, target):
     _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
     if relevant_comps == -1:
         return -1  # if theres no path
-    ret = 0
+    ret = 1
     for comp in relevant_comps:
-        ret += len(comp)
+        ret += len(comp) - 1
     return ret
 
 
@@ -96,26 +102,26 @@ def component_degree(comp, graph):
     return graph.number_of_edges()
 
 
-def shimony_pairs_bcc_aprox(state, G, target):
-    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
-                                                                                                        G, target)
-    if relevant_comps == -1:
-        return len(G.nodes) ** 2  # no path
-    cut_node_dict = {}
-
-    n = len(relevant_comps)
-    nodes_num = len(reachables)
-    comp_degree_coeff = 1 / (nodes_num ** 2)
-    in_pairs = 0
-    nodes_per_comp = map(lambda comp: (comp_degree_coeff * component_degree(comp, reach_nested)) ** 2, relevant_comps)
-    in_pairs = sum(nodes_per_comp)
-    inter_pairs = 0
-    for i in range(n):
-        for j in range(i + 1, n):
-            # for every two nodes in different there's a path from start to target that visits them
-            inter_pairs += len(relevant_comps[i]) * len(relevant_comps[j])
-
-    return inter_pairs
+# def shimony_pairs_bcc_aprox(state, G, target):
+#     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+#                                                                                                         G, target)
+#     if relevant_comps == -1:
+#         return len(G.nodes) ** 2  # no path
+#     cut_node_dict = {}
+#
+#     n = len(relevant_comps)
+#     nodes_num = len(reachables)
+#     comp_degree_coeff = 1 / (nodes_num ** 2)
+#     in_pairs = 0
+#     nodes_per_comp = map(lambda comp: (comp_degree_coeff * component_degree(comp, reach_nested)) ** 2, relevant_comps)
+#     in_pairs = sum(nodes_per_comp)
+#     inter_pairs = 0
+#     for i in range(n):
+#         for j in range(i + 1, n):
+#             # for every two nodes in different there's a path from start to target that visits them
+#             inter_pairs += len(relevant_comps[i]) * len(relevant_comps[j])
+#
+#     return inter_pairs
 
 
 def function(state, heuristic, G, target):
@@ -141,7 +147,7 @@ def longest_shortest_path(state, G, target):
 def find_disjoint_paths(graph, segment):
     x1 = segment[0]
     x2 = segment[1]
-    return list(nx.edge_disjoint_paths(graph, x1, x2))
+    return list(nx.all_simple_paths(graph, x1, x2))
 
 
 def paths_disjoint(p1, p2):
@@ -170,33 +176,104 @@ def is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
     paths = []
     for seg in segments:
         paths += [find_disjoint_paths(graph, seg)]
-
-    paths2 = [find_disjoint_paths(graph, [in_node, x2]), paths[1], find_disjoint_paths(graph, [x1, out_node])]
-
+    paths2 = [find_disjoint_paths(graph, [in_node, x2]), [p[::-1] for p in paths[1]],
+              find_disjoint_paths(graph, [x1, out_node])]
+    # print(paths)
+    # print(paths2)
     return not can_combine_paths(0, paths, [in_node]) and not can_combine_paths(0, paths2, [in_node])
 
 
-def shimony_pairs(graph, in_node, out_node):
-    counter = 1  # first pair is in and out nodes
+def disjoint_shimony_pairs(graph, in_node, out_node):
+    global index_to_node
+    counter = 0  # first pair is in and out nodes
     done = []
+    pairs = []
     for x1 in graph.nodes:
-        done += [x1]
-        if x1 == in_node or x1 == out_node:
+        if x1 == in_node or x1 == out_node or x1 in done:
             continue
         for x2 in graph.nodes:
-            if x2 == in_node or x2 == out_node or x2 in done:
+            if x2 == in_node or x2 == out_node or x1 in done or x2 in done or x1 == x2:
                 continue
             if is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
-                print(x1, x2)
+                # di_graph = get_vertex_disjoint_directed(graph)
+                # print('3 flow found: ', not (
+                #             flow_linear_programming(in_node, x1, x2, out_node, di_graph) or flow_linear_programming(
+                #         in_node, x2, x1, out_node, di_graph)))
+                # print('regular flow found: ', not (
+                #             has_flow(in_node, x1, x2, out_node, di_graph) or has_flow(in_node, x2, x1, out_node,
+                #                                                                       di_graph)))
                 counter += 1
+                done += [x1, x2]
+                # print(index_to_node[x1], index_to_node[x2])
+                pairs += [(x1, x2)]
+    print(pairs)
     return counter
+
+
+# def disjoint_shimony_pairs(graph, in_node, out_node):
+#     global index_to_node
+#     dis_set = set()
+#     counter = 0  # first pair is in and out nodes
+#     done = []
+#     for x1 in graph.nodes:
+#         done += [x1]
+#         if x1 == in_node or x1 == out_node:
+#             continue
+#         for x2 in graph.nodes:
+#             if x2 == in_node or x2 == out_node or x2 in done or x1 in done:
+#                 continue
+#             if is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
+#                 if not (x1 in dis_set or x2 in dis_set):
+#                     dis_set.add(x1)
+#                     dis_set.add(x2)
+#                     print(f"{index_to_node[x1]}, {index_to_node[x2]}")
+#                     counter += 1
+#     return counter
+
+
+# def shimony_pairs_bcc(state, G, target):
+#     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+#                                                                                                         G, target)
+#     bcc_path_len = 1
+#     if relevant_comps == -1:
+#         return 0  # no path
+#     cut_node_dict = {}
+#     for node in reachables:
+#         comps = bcc_dict[node]
+#         # if node in more than 1 component, its a cut node
+#         if len(comps) > 1:
+#             for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+#                 cut_node_dict[(c1, c2)] = node
+#                 cut_node_dict[(c2, c1)] = node
+#
+#     n = len(relevant_comps)
+#     # if n < 3:
+#     #     return 0
+#
+#     in_pairs = 0
+#     for i in range(n):
+#         comp = relevant_comps[i]
+#         bcc_path_len += len(comp) - 1
+#         # print("comp: ", comp)
+#         # getting cut nodes
+#         if i == 0:
+#             in_node = current_node
+#         else:
+#             in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+#         if i == n - 1:
+#             out_node = target
+#         else:
+#             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+#         in_pairs += disjoint_shimony_pairs(reach_nested.subgraph(comp), in_node, out_node)
+#     print("bcc len: ", bcc_path_len, "pairs: ", in_pairs)
+#     return bcc_path_len - in_pairs
 
 
 def shimony_pairs_bcc(state, G, target):
     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
                                                                                                         G, target)
     if relevant_comps == -1:
-        return len(G.nodes) ** 2  # no path
+        return 0
     cut_node_dict = {}
     for node in reachables:
         comps = bcc_dict[node]
@@ -207,10 +284,9 @@ def shimony_pairs_bcc(state, G, target):
                 cut_node_dict[(c2, c1)] = node
 
     n = len(relevant_comps)
-    if n < 3:
-        return 0
-
     in_pairs = 0
+    ex_pairs = []
+    sum = 1
     for i in range(n):
         comp = relevant_comps[i]
         # getting cut nodes
@@ -222,9 +298,15 @@ def shimony_pairs_bcc(state, G, target):
             out_node = target
         else:
             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
-        in_pairs += shimony_pairs(reach_nested.subgraph(comp), in_node, out_node)
-
-    return in_pairs
+        counter = disjoint_shimony_pairs(reach_nested.subgraph(comp), in_node, out_node)
+        in_pairs += counter
+        # ex_pairs += pairs
+        sum += len(comp) - 1 - counter
+    # print(state)
+    # # print(pairs)
+    # print(sum)
+    # print('\n\n\n\n\n\n')
+    return sum
 
 
 # --- SHIMONY PAIRS IMPLEMENTATION 2 ---
@@ -238,39 +320,39 @@ def count_pairs_from_paths(graph, s, t):
     return len(graph.nodes) * (len(graph.nodes) - 1) - len(pairs)
 
 
-def shimony_pairs_bcc2(state, G, target):
-    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
-                                                                                                        G, target)
-    if relevant_comps == -1:
-        return len(G.nodes) ** 2  # no path
-    cut_node_dict = {}
-    for node in reachables:
-        comps = bcc_dict[node]
-        # if node in more than 1 component, its a cut node
-        if len(comps) > 1:
-            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
-                cut_node_dict[(c1, c2)] = node
-                cut_node_dict[(c2, c1)] = node
-
-    n = len(relevant_comps)
-    if n < 3:
-        return 0
-
-    in_pairs = 0
-    for i in range(n):
-        comp = relevant_comps[i]
-        # getting cut nodes
-        if i == 0:
-            in_node = current_node
-        else:
-            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
-        if i == n - 1:
-            out_node = target
-        else:
-            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
-        in_pairs += count_pairs_from_paths(reach_nested.subgraph(comp), in_node, out_node)
-
-    return in_pairs
+# def shimony_pairs_bcc2(state, G, target):
+#     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+#                                                                                                         G, target)
+#     if relevant_comps == -1:
+#         return len(G.nodes) ** 2  # no path
+#     cut_node_dict = {}
+#     for node in reachables:
+#         comps = bcc_dict[node]
+#         # if node in more than 1 component, its a cut node
+#         if len(comps) > 1:
+#             for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+#                 cut_node_dict[(c1, c2)] = node
+#                 cut_node_dict[(c2, c1)] = node
+#
+#     n = len(relevant_comps)
+#     if n < 3:
+#         return 0
+#
+#     in_pairs = 0
+#     for i in range(n):
+#         comp = relevant_comps[i]
+#         # getting cut nodes
+#         if i == 0:
+#             in_node = current_node
+#         else:
+#             in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+#         if i == n - 1:
+#             out_node = target
+#         else:
+#             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+#         in_pairs += count_pairs_from_paths(reach_nested.subgraph(comp), in_node, out_node)
+#
+#     return in_pairs
 
 
 def count_easy_shimony_nodes(G, in_node, out_node):
@@ -298,8 +380,6 @@ def easy_ex_nodes(state, G, target):
                 cut_node_dict[(c2, c1)] = node
 
     n = len(relevant_comps)
-    if n < 3:
-        return 0
 
     good_nodes = 0
     for i in range(n):
@@ -345,10 +425,6 @@ def get_dis_pairs(s, t, nodes, good_pairs):
     print(nodes)
     for i in range(len(nodes)):
         node1 = nodes[i]
-        # print(nodes)
-        # print(node1)
-        # # print(tuple(node1))
-        # print(s)
         if node1 == s or node1 == t:
             continue
         for j in range(i + 1, len(nodes)):
@@ -379,39 +455,61 @@ def flow_linear_programming(s, x, y, t, g):
     edges = list(g.edges)
     ne = len(edges)
     # objective
-    obj = [-1] * (3 * ne)
+    obj = [1] * (3 * ne)
+    # obj = [1 if edges[i] in g.in_edges(str(x) + "in") else 0 for i in range(ne)] + [1 if edges[i] in g.in_edges(str(y) + "in") else 0 for i in range(ne)] + [1 if edges[i] in g.in_edges(str(t) + "in") else 0 for i in range(ne)]
     # print(g.nodes)
     # print(f"s: {s}, t: {t}, x: {x}, y: {y}")
 
     #   edges constraints
     edges_lhs_ineq = [[1 if i in (j, j + ne, j + 2 * ne) else 0 for i in range(3 * ne)] for j in range(ne)]
-    edges_rhs_ineq = [1] * ne
+    # edges_rhs_ineq = [1] * ne
 
+    vertices_lhs_ineq_1 = [
+        [1 if edges[i] in g.in_edges(node) else 0 for i in range(ne)] * 3 for node in g.nodes
+        if node not in (str(s) + "in", str(x) + "in")]
+    # vertices_lhs_ineq_2 = [
+    #     [0] * ne + [1 if edges[i] in g.in_edges(node) else 0 for i in range(ne)] + [0] * ne for node in g.nodes
+    #     if node not in (str(x) + "in", str(y) + "in")]
+    # vertices_lhs_ineq_3 = [
+    #     [0] * (2 * ne) + [1 if edges[i] in g.in_edges(node) else 0 for i in range(ne)] for node in g.nodes
+    #     if node not in (str(y) + "in", str(t) + "in")]
+
+    lhs_ineq = edges_lhs_ineq + vertices_lhs_ineq_1
+    rhs_ineq = [1] * (ne + nv - 2)
+
+
+
+    # print(f"=-=-=-=-=-=-=-=- edges[0]: {edges[1]}, g.in_edges(): {g.in_edges(str(s)+'in')}")
     #   vertices constraints
     vertices_lhs_eq_1 = [
         [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in range(ne)] + [0] * (
                 2 * ne) for node in g.nodes if
-        node not in (str(s) + "in", str(s) + "out", str(x) + "in", str(x) + "out")]
+        node not in (str(s) + "in", str(x) + "in")]
     vertices_lhs_eq_2 = [
         [0] * ne + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in
                     range(ne)] + [0] * ne for node in g.nodes if
-        node not in (str(x) + "in", str(x) + "out", str(y) + "in", str(y) + "out")]
+        node not in (str(x) + "in", str(y) + "in")]
     vertices_lhs_eq_3 = [
         [0] * (2 * ne) + [1 if edges[i] in g.in_edges(node) else -1 if edges[i] in g.out_edges(node) else 0 for i in
                           range(ne)] for node in g.nodes if
-        node not in (str(y) + "in", str(y) + "out", str(t) + "in", str(t) + "out")]
+        node not in (str(y) + "in", str(t) + "in")]
 
     # s -> x constraint
-    s_out_lhs_eq = [[1 if edges[i] in g.out_edges(str(s) + "out") else 0 for i in range(ne)] + [0] * (2 * ne)]
+    s_out_lhs_eq = [[1 if edges[i] == (str(s)+'in', str(s)+'out') else 0 for i in range(ne)] + [0] * (2 * ne)]
     x_in_lhs_eq = [[1 if edges[i] in g.in_edges(str(x) + "in") else 0 for i in range(ne)] + [0] * (2 * ne)]
 
     # x -> y constraint
-    x_out_lhs_eq = [[0] * ne + [1 if edges[i] in g.out_edges(str(x) + "out") else 0 for i in range(ne)] + [0] * ne]
+    x_out_lhs_eq = [[0] * ne + [1 if edges[i] == (str(x)+'in', str(x)+'out') else 0 for i in range(ne)] + [0] * ne]
     y_in_lhs_eq = [[0] * ne + [1 if edges[i] in g.in_edges(str(y) + "in") else 0 for i in range(ne)] + [0] * ne]
 
     # y -> t constraint
-    y_out_lhs_eq = [[0] * (2 * ne) + [1 if edges[i] in g.out_edges(str(y) + "out") else 0 for i in range(ne)]]
+    y_out_lhs_eq = [[0] * (2 * ne) + [1 if edges[i] == (str(y)+'in', str(y)+'out') else 0 for i in range(ne)]]
     t_in_lhs_eq = [[0] * (2 * ne) + [1 if edges[i] in g.in_edges(str(t) + "in") else 0 for i in range(ne)]]
+
+    s_in = [[1 if edges[i] in g.in_edges(str(s)+'in') else 0 for i in range(ne)] + [0] * (2 * ne)]
+    x_in = [[0] * ne + [1 if edges[i] in g.in_edges(str(x) + 'in') else 0 for i in range(ne)] + [0] * ne]
+    y_in = [[0] * (2 * ne) + [1 if edges[i] in g.in_edges(str(y) + 'in') else 0 for i in range(ne)]]
+
 
     #  combined constraints
     vertices_lhs_eq = vertices_lhs_eq_1 \
@@ -422,24 +520,26 @@ def flow_linear_programming(s, x, y, t, g):
                       + x_out_lhs_eq \
                       + y_in_lhs_eq \
                       + y_out_lhs_eq \
-                      + t_in_lhs_eq
+                      + t_in_lhs_eq \
+                      + s_in + x_in + y_in
     # print(len(vertices_lhs_eq_1), len(vertices_lhs_eq_2), len(vertices_lhs_eq_3))
 
-    vertices_rhs_eq = [0] * (3 * (nv - 4)) + [1] * 6
+    vertices_rhs_eq = [0] * (3 * (nv - 2)) + [1] * 6 + [0] * 3
     # print(len(vertices_rhs_eq), len(vertices_lhs_eq))
 
     # bounds
     bnd = [(0, 1)] * (3 * ne)
     # print("nv", nv, "ne", ne, "len", len(vertices_lhs_eq), len(vertices_rhs_eq))
 
-    opt = linprog(c=obj, A_ub=edges_lhs_ineq, b_ub=edges_rhs_ineq,
+    opt = linprog(c=obj, A_ub=lhs_ineq, b_ub=rhs_ineq,
                   A_eq=vertices_lhs_eq, b_eq=vertices_rhs_eq, bounds=bnd,
                   method="revised simplex")
-    # print(opt.success)
-    return opt.success
+    print(opt)
+    return opt.success, opt.x
 
 
 def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
+    print(f"s:{s}, t:{t}")
     good_pairs = set()
     for path in nx.node_disjoint_paths(graph, s, t):
         p = len(path)
@@ -450,11 +550,25 @@ def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
     # print(graph.nodes)
     # print("goooooood", good_pairs)
     possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs)  ### NOT REALLY DISJOINT
-    ex_pairs = {
-        x: y for x, y in possible_pairs
-        if not flow_linear_programming(s, x, y, t, g_di)
-        and not flow_linear_programming(s, y, x, t, g_di)
-    }
+    ex_pairs = {}
+    for x, y, in possible_pairs:
+        print("possible pairs len: ",len(possible_pairs))
+        success1, solution1 = flow_linear_programming(s, x, y, t, g_di)
+        if success1:
+            possible_pairs = delete_not_possible_pairs(possible_pairs, solution1, s, x, y, t, g_di)
+        else:
+            print('failed with ', x, y)
+        success2, solution2 = flow_linear_programming(s, y, x, t, g_di)
+        if success2:
+            possible_pairs = delete_not_possible_pairs(possible_pairs, solution2, s, x, y, t, g_di)
+        if not success1 and not success2:
+            ex_pairs[x] = y
+
+    # ex_pairs = {
+    #     x: y for x, y in possible_pairs
+    #     if not flow_linear_programming(s, x, y, t, g_di)
+    #        and not flow_linear_programming(s, y, x, t, g_di)
+    # }
     print("ex_pairs len: ", len(ex_pairs))
     ep = list(ex_pairs.items())
     counter = 0
@@ -479,7 +593,51 @@ def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
         except Exception as e:
             pass
     print("new len: ", counter)
+    print(ep)
+    # print(ep[0])
+    # print(index_to_node[ep[0][0]], index_to_node[ep[0][1]])
     return counter
+
+def delete_not_possible_pairs(possible_pairs, solution, s, x, y, t, g):
+    print('start deleteing pairs')
+    if all([f==1. or f==0. for f in solution]):
+        ne = len(g.edges)
+        # flow1, flow2, flow3 = solution[:ne], solution[ne:2*ne], solution[2*ne:]
+        path = find_path(solution, s, t, g)
+        # print(f"s: {s}, x: {x}, y: {y}, t: {t}")
+        # print(f"path contains x and y: {str(x)+'in' in path and str(y)+'in' in path}")
+        # print(path)
+        path = {x.replace('in', '').replace('out', '') for x in path}
+        # print(path)
+        # print(possible_pairs)
+        for x,y in possible_pairs:
+            if str(x) in path and str(y) in path:
+                possible_pairs.remove((x,y))
+    # print(possible_pairs)
+    return possible_pairs
+
+def find_path(flow, s, t, g):
+    print('finding path', s, t)
+    edges = list(g.edges)
+    ne = len(edges)
+    cur_v = str(s)+'in'
+    path = [cur_v]
+    i=0
+    while not cur_v == str(t)+'in':
+        # print(f'cur_v: {cur_v}')
+        # print(g.out_edges(cur_v))
+        # print([flow[edges.index(edge)] for edge in g.out_edges(cur_v)])
+        # print([flow[edges.index(edge) + ne] for edge in g.out_edges(cur_v)])
+        # print([flow[edges.index(edge) + 2*ne] for edge in g.out_edges(cur_v)])
+
+        for edge in g.out_edges(cur_v):
+            # print(flow[edges.index(edge)])
+            if flow[edges.index(edge)] == 1. or flow[edges.index(edge) + ne] == 1. or flow[edges.index(edge) + (2 * ne)] == 1.:
+                cur_v = edge[1]
+                path += [cur_v]
+                break
+    return path
+
 
 
 def ex_pairs_using_flow(state, G, target):
@@ -499,10 +657,11 @@ def ex_pairs_using_flow(state, G, target):
     n = len(relevant_comps)
 
     ex_pairs = 0
-    bcc_path_size = 0
+    bcc_path_size = 1
     for i in range(n):
+        print('i: ', i)
         comp = relevant_comps[i]
-        bcc_path_size += len(comp)
+        bcc_path_size += len(comp) - 1
         # getting cut nodes
         if i == 0:
             in_node = current_node
@@ -512,9 +671,12 @@ def ex_pairs_using_flow(state, G, target):
             out_node = target
         else:
             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        print('here1')
         graph = reach_nested.subgraph(comp)
         di_graph = get_vertex_disjoint_directed(graph)
+        print('here2')
         to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph)
+        print('here3')
         ex_pairs += to_add
         # if to_add > 0:
         #     print(to_add, len(comp), n)

@@ -27,12 +27,11 @@ def run(heuristic, graph, start, target, cutoff, timeout):
     h = (lambda x: heuristic(x, graph, target))
     strong_h = (lambda x: ex_pairs_using_flow(x, graph, target))
     g = (lambda x: len(x[PATH]))
-    end_state, data = max_lazy_a_star(graph,
-                                      start_state,
-                                      get_goal_func(target),
-                                      h,
-                                      strong_h,
-                                      g)
+    end_state, data = max_a_star(graph,
+                                 start_state,
+                                 get_goal_func(target),
+                                 h,
+                                 g)
     expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = data
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
 
@@ -99,27 +98,31 @@ heuristics = [
     ["bcc nodes", count_nodes_bcc],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
     # ["easy nodes", easy_ex_nodes],
-    # ["sp heuristics 2", shimony_pairs_bcc2]
-    # ["edge disjoint", longest_edge_disjoint_path],
-    # ["node disjoint", longest_node_disjoint_path],
+    ["brute_force_ex_pairs", shimony_pairs_bcc],
     ["ex_pairs_using_flow", ex_pairs_using_flow],
 ]
+# x, index_to_node = build_small_grid()
+# graph, start, target = x[0]
+# start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+# start_path = (start,)
+# start_state = (start, start_path, start_available)
 
-graph, start, target = build_small_grid()[0]
-start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
-start_path = (start,)
-start_state = (start, start_path, start_available)
+# print_graph(graph)
 
-plt.scatter([x for x,y in graph.nodes], [y for x,y in graph.nodes])
-for node1, node2 in graph.edges:
-    print(node1, node2)
-    plt.axline(node1, node2)
-    break
+# plt.show()
 
-plt.show()
+# print(index_to_node[3], index_to_node[13])
+# print(index_to_node[4], index_to_node[13])
+# print(index_to_node[9], index_to_node[13])
+# #
+# print(index_to_node[2], index_to_node[13])
+# print(index_to_node[3], index_to_node[23])
+#
+# print(f"flow value: {ex_pairs_using_flow(start_state, graph, target)}")
 # print(f"brute force value: {shimony_pairs_bcc(start_state, graph, target)}")
-# print(f"state value: {ex_pairs_using_flow(start_state, graph, target)}")
+# print(f"easy pairs value: {easy_ex_nodes(start_state, graph, target)}")
+# print(index_to_node[19], index_to_node[23])
 
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.5))
-# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
