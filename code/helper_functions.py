@@ -115,7 +115,6 @@ def generate_grid(grid):
             continue
         try:
             path = nx.shortest_path(graph, source=start, target=target)
-            print('path', path)
             break
         except:
             continue

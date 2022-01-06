@@ -104,14 +104,14 @@ def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
     CLOSED = []
     expansions = 0
     while OPEN:
-        if expansions % 100 == 0:
+        if expansions != 0 and expansions % 100 == 0:
             print(expansions)
 
         q = max(OPEN, key=get_state_value)
         OPEN.remove(q)
-        if expansions % 1000 == 0:
-            h_val, g_val = get_h_and_g(q)
-            print(f"state pulled from Open: H_val: {h_val}, g_val: {g_val}, f_val: {h_val + g_val}")
+        # if expansions % 1000 == 0:
+        #     h_val, g_val = get_h_and_g(q)
+        #     print(f"state pulled from Open: H_val: {h_val}, g_val: {g_val}, f_val: {h_val + g_val}")
 
         h_vals += [get_state_value(q)]
         lens += [len(q[PATH])]
