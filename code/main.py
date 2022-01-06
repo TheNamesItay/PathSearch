@@ -1,7 +1,7 @@
 import networkx as nx
 import time as t
 
-from graph_builder import build_room_graph, build_small_grid
+from graph_builder import build_room_graph, build_small_grid, build_small_grid_test, build_heuristic_showcase
 from heuristics import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
@@ -45,9 +45,11 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
     sum_path_lengths = dict.fromkeys(names, 0)
     hs_per_run = {}
     pl_per_run = {}
+    expansions_per_run = {}
     for name, _ in heuristic_name_func_pairs:
         hs_per_run[name] = [0] * runs
         pl_per_run[name] = [0] * runs
+        expansions_per_run[name] = [0] * runs
     graph_i = 0
     for graph, start, target in graphs:
         print()
@@ -59,6 +61,7 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
             sum_runtimes[name] += runtime
             hs_per_run[name][graph_i] = hs
             pl_per_run[name][graph_i] = pl
+            expansions_per_run[name][graph_i] = expansions
             print(f"{name} {hs_per_run[name][graph_i]}")
             print(f"\tNAME: {name}, \t\tPATH-LENGTH: {len(path)}, \t\tEXPANSIONS: {expansions} \t\tRUNTIME: {runtime}")
         display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run)
@@ -71,6 +74,14 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
         avg_runtime = sum_runtimes[name] / runs
         print(f"\tNAME: {name}, "
               f"\t\tPATH-LENGTH: {avg_length}, \t\tEXPANSIONS: {avg_expansions} \t\tRUNTIME: {avg_runtime}")
+    print()
+    if len(heuristic_name_func_pairs) == 2:
+        name1, name2 = heuristic_name_func_pairs[0][0], heuristic_name_func_pairs[1][0]
+        ratio_sum = 0
+        for i in range(runs):
+            ratio_sum = expansions_per_run[name1][i] / expansions_per_run[name2][i]
+        ratio = ratio_sum / runs
+        print(f"EXPANSION RATIO: {name1} / {name2} = {ratio}")
 
 
 def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):

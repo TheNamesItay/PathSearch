@@ -1,7 +1,7 @@
 import networkx as nx
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
-from numpy import sort
+from numpy import sort, math
 from scipy.optimize import linprog
 from helper_functions import *
 
@@ -210,65 +210,6 @@ def disjoint_shimony_pairs(graph, in_node, out_node):
     return counter
 
 
-# def disjoint_shimony_pairs(graph, in_node, out_node):
-#     global index_to_node
-#     dis_set = set()
-#     counter = 0  # first pair is in and out nodes
-#     done = []
-#     for x1 in graph.nodes:
-#         done += [x1]
-#         if x1 == in_node or x1 == out_node:
-#             continue
-#         for x2 in graph.nodes:
-#             if x2 == in_node or x2 == out_node or x2 in done or x1 in done:
-#                 continue
-#             if is_legit_shimony_pair(graph, in_node, out_node, x1, x2):
-#                 if not (x1 in dis_set or x2 in dis_set):
-#                     dis_set.add(x1)
-#                     dis_set.add(x2)
-#                     print(f"{index_to_node[x1]}, {index_to_node[x2]}")
-#                     counter += 1
-#     return counter
-
-
-# def shimony_pairs_bcc(state, G, target):
-#     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
-#                                                                                                         G, target)
-#     bcc_path_len = 1
-#     if relevant_comps == -1:
-#         return 0  # no path
-#     cut_node_dict = {}
-#     for node in reachables:
-#         comps = bcc_dict[node]
-#         # if node in more than 1 component, its a cut node
-#         if len(comps) > 1:
-#             for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
-#                 cut_node_dict[(c1, c2)] = node
-#                 cut_node_dict[(c2, c1)] = node
-#
-#     n = len(relevant_comps)
-#     # if n < 3:
-#     #     return 0
-#
-#     in_pairs = 0
-#     for i in range(n):
-#         comp = relevant_comps[i]
-#         bcc_path_len += len(comp) - 1
-#         # print("comp: ", comp)
-#         # getting cut nodes
-#         if i == 0:
-#             in_node = current_node
-#         else:
-#             in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
-#         if i == n - 1:
-#             out_node = target
-#         else:
-#             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
-#         in_pairs += disjoint_shimony_pairs(reach_nested.subgraph(comp), in_node, out_node)
-#     print("bcc len: ", bcc_path_len, "pairs: ", in_pairs)
-#     return bcc_path_len - in_pairs
-
-
 def shimony_pairs_bcc(state, G, target):
     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
                                                                                                         G, target)
@@ -447,6 +388,7 @@ def has_flow(s, x, y, t, g):
     g.remove_edge("flow_start", str(x) + "out")
     g.remove_edge(str(t) + "in", "flow_end")
     g.remove_edge(str(y) + "in", "flow_end")
+    print('fv = ', flow_value)
     return flow_value == 3
 
 

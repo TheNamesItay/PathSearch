@@ -96,7 +96,7 @@ def generate_grid(grid):
         for j in range(width):
             if grid[i][j]:
                 continue
-            node = (i,j)
+            node = (i, j)
             graph.add_node(node)
             index_to_node[(i, j)] = node
             if i > 0 and not grid[i - 1][j]:
@@ -132,9 +132,13 @@ def generate_grids(num_of_runs, height, width, block_p):
 
 def get_directed_graph(g):
     g_new = nx.DiGraph()
+    d = list(g.nodes).index
     for node in g.nodes:
         g_new.add_node(node)
-    for (s, t) in g.edges:
+    for (st, tt) in g.edges:
+        s = d(st)
+        t = d(tt)
+        print('s-', s, ' t-', t)
         node1 = s + t + "'"
         node2 = s + t + "''"
         g.add_node(node1)
@@ -148,15 +152,17 @@ def get_directed_graph(g):
 
 
 def get_vertex_disjoint_directed(g):
+    # d = list(g.nodes).index
     g_ret = nx.DiGraph()
     for node in g.nodes:
         node_str = str(node)
-        g_ret.add_node(node_str+"in")
-        g_ret.add_node(node_str+"out")
-        g_ret.add_edge(node_str+"in", node_str+"out", capacity=5)
-    for s, t in g.edges:
-        g_ret.add_edge(str(s)+"out", str(t)+"in", capacity=1)
-        g_ret.add_edge(str(t)+"out", str(s)+"in", capacity=1)
+        g_ret.add_node(node_str + "in")
+        g_ret.add_node(node_str + "out")
+        g_ret.add_edge(node_str + "in", node_str + "out", capacity=5)
+    for st, tt in g.edges:
+        s, t = st, tt
+        g_ret.add_edge(str(s) + "out", str(t) + "in", capacity=1)
+        g_ret.add_edge(str(t) + "out", str(s) + "in", capacity=1)
     return g_ret
 
 
@@ -175,6 +181,8 @@ def just_grid(grid):
     path = []
     graph = nx.Graph()
     index_to_node = {}
+    node_to_index = {}
+    index = 0
 
     # set up edges
     for i in range(height):
@@ -182,10 +190,61 @@ def just_grid(grid):
             if grid[i][j]:
                 continue
             node = (i, j)
-            graph.add_node(node)
-            index_to_node[(i, j)] = node
+            index_to_node[index] = node
+            graph.add_node(index)
+            node_to_index[(i, j)] = index
             if i > 0 and not grid[i - 1][j]:
-                graph.add_edge(node, (i - 1, j))
+                graph.add_edge(index, node_to_index[(i - 1, j)])
             if j > 0 and not grid[i][j - 1]:
-                graph.add_edge(node, (i, j - 1))
-    return graph
+                graph.add_edge(index, node_to_index[(i, j - 1)])
+            index += 1
+
+    for node in graph.nodes:
+        graph.nodes[node]["constraint_nodes"] = [node]
+
+    return graph, index_to_node, node_to_index
+
+
+comp_colors = [
+    # (240, 248, 255),
+    # # (250, 235, 215),
+    # # (238, 223, 204),
+    # (255, 239, 219),
+    # # (205, 192, 176),
+    # # (139, 131, 120),
+    # # (0, 255, 255),
+    # # (127, 255, 212),
+    # # (118, 238, 198),
+    # # (102, 205, 170),
+    # # (69, 139, 116),
+    # # (240, 255, 255),
+    # # (224, 238, 238),
+    # # (193, 205, 205),
+    # # (131, 139, 139),
+    # # (227, 207, 87),
+    # # (245, 245, 220),
+    # (255, 228, 196),
+    # (238, 213, 183),
+    # (205, 183, 158),
+    # (139, 125, 107),
+    # (0, 0, 0),
+    # (255, 235, 205),
+    # (0, 0, 255),
+    # (0, 0, 238),
+    # (0, 0, 205),
+    # (0, 0, 139),
+    (138, 43, 226),
+    (156, 102, 31),
+    (165, 42, 42),
+    # (255, 64, 64),
+    # (238, 59, 59),
+    # (205, 51, 51),
+    (139, 35, 35),
+    (222, 184, 135),
+    (255, 211, 155),
+    (238, 197, 145),
+    (205, 170, 125),
+    (139, 115, 85),
+    (138, 54, 15),
+    (138, 51, 36),
+]

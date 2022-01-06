@@ -79,7 +79,7 @@ def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_
                 set_to_strong_state_value(q, strong_h, g)
         if expansions % 1000 == 0:
             h_val, g_val = get_h_and_g(q)
-            print(f"state pulled from Open: H_val: {h_val}, g_val: {g_val}, f_val: {h_val + g_val}")
+            print(f"e-{expansions} state pulled from Open: H_val: {h_val}, g_val: {g_val}, f_val: {h_val + g_val}")
 
         h_vals += [get_state_value(q)]
         lens += [len(q[PATH])]
