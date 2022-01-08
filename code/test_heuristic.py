@@ -4,6 +4,7 @@ import numpy as np
 from graph_builder import *
 from helper_functions import *
 from playing_around import shimony_pairs_bcc as shimony
+from playing_around import set_itn, pairs_lst, lpf_misses, regf_misses, specific_lpf_misses, specific_regf_misses
 from heuristics import *
 from playing_around import is_legit_shimony_pair as is_shimony
 
@@ -71,15 +72,22 @@ def add_rectangle(x, y, h, w, mat):
 # mat = add_rectangle(10,5,9,1,mat)
 while True:
     try:
-        block_p, width, height = 0.3, 31, 31
-        mat = [[(0 if random.uniform(0, 1) > block_p else 1) for i in range(width)] for j in range(height)]
-        mat[0][0] = 0
-        mat[20][15] = 0
-        mat, g, start, t, index_to_node, node_to_index = build_small_grid_test()
-        print(node_to_index)
-        start = node_to_index[(0, 0)]
-        t = node_to_index[]
-        print(start, t)
+        block_p, width, height = 0.5, 4, 4
+
+        while True:
+            try:
+                mat = [[(0 if random.uniform(0, 1) > block_p or j == 0 or j == height-1 else 1) for i in range(width)] for j in range(height)]
+                # mat = [[0, 0, 0, 0, 0], [1, 0, 0, 0, 0], [0, 1, 0, 1, 1], [1, 1, 0, 1, 0], [0, 0, 0, 0, 0]]
+                mat, g, start, t, index_to_node, node_to_index = generate_grid_fortesting(mat)
+                break
+            except Exception as e:
+                print(e)
+                continue
+        print(mat)
+        set_itn(index_to_node)
+
+        # print(node_to_index)
+        # print(start, t)
 
         start_available = tuple(diff(list(g.nodes), g.nodes[start]["constraint_nodes"]))
         start_path = (start,)
@@ -88,25 +96,44 @@ while True:
         # start_state = (s, (s,), tuple(g.nodes))
         reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(start_state, g, t)
 
-        draw_grid(mat, start_state, index_to_node[t], relevant_comps, index_to_node)
 
-        print(' -- ', relevant_comps)
+        # print(' -- ', relevant_comps)
         best_comp = max(relevant_comps, key=len)
-        node = node_to_index[(1,0)]
 
-        print('getting path')
+        print([index_to_node[x] for x in best_comp])
+
+        node = start
+
+        # print('getting path')
+        print('huh')
         path = nx.shortest_path(g, source=start, target=node)
-        print('done path')
+        # print('done path')
 
         av = diff(g.nodes, path)
 
         state = (node, tuple(path), tuple(av))
-        s = (0, (0,), (2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24))
+        print('state ', state)
+
         reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
                                                                                                             g, t)
+        draw_grid(mat, state, index_to_node[t], relevant_comps, index_to_node)
+
         # draw_grid(mat, start_state, index_to_node[t], relevant_comps, index_to_node)
 
-        brute_res, pairs = shimony(s, g, t)
+        brute_res, pairs = shimony(state, g, t)
+
+        print('\n\n')
+        print("pairs: ", len(pairs_lst), "\t", pairs_lst)
+        print("3 flow misses: ", len(lpf_misses), "\t", lpf_misses)
+        print("regular flow misses: ", len(regf_misses), "\t", regf_misses)
+        print('\n\n')
+        print("specific 3 flow misses: ", "\t", specific_lpf_misses)
+        print("specific regular flow misses: ", specific_regf_misses)
+
+        with open('test_results.txt', 'a') as f:
+            f.write(str((mat, pairs_lst, lpf_misses, regf_misses)))
+            f.write('\n')
+
         # flow_res = ex_pairs_using_flow(state, g, t)
         # flow_res, flow_pairs = ex_pairs_using_flow(s, g, t)
         # flow_res = ex_pairs_using_flow(state, g, t)
@@ -134,9 +161,8 @@ while True:
         #         print(ps, " ----- ", end='')
         #     print()
 
-        break
+        continue
     except Exception as e:
-        raise e
         continue
 
 

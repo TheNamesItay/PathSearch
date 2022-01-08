@@ -51,7 +51,7 @@ def bcc_thingy(state, G, target):
     path = []
     if target in reachables:
         path = nx.shortest_path(reach_nested, source=current_node, target=target)
-        if len(path) < 2:
+        if len(path) < 1:
             return -1, -1, -1, -1, -1, -1
     else:
         return -1, -1, -1, -1, -1, -1
@@ -381,6 +381,10 @@ def get_dis_pairs(s, t, nodes, good_pairs):
 def has_flow(s, x, y, t, g):
     g.add_edge("flow_start", str(s) + "out", capacity=1)
     g.add_edge("flow_start", str(x) + "out", capacity=2)
+    g[str(s)+'in'][str(s)+'out']['capacity'] = 0
+    g[str(x)+'in'][str(x)+'out']['capacity'] = 0
+    g[str(y)+'in'][str(y)+'out']['capacity'] = 0
+    g[str(t)+'in'][str(t)+'out']['capacity'] = 0
     g.add_edge(str(t) + "in", "flow_end", capacity=1)
     g.add_edge(str(y) + "in", "flow_end", capacity=2)
     flow_value, flow_dict = nx.maximum_flow(g, "flow_start", "flow_end")
@@ -388,7 +392,6 @@ def has_flow(s, x, y, t, g):
     g.remove_edge("flow_start", str(x) + "out")
     g.remove_edge(str(t) + "in", "flow_end")
     g.remove_edge(str(y) + "in", "flow_end")
-    print('fv = ', flow_value)
     return flow_value == 3
 
 
@@ -476,7 +479,7 @@ def flow_linear_programming(s, x, y, t, g):
     opt = linprog(c=obj, A_ub=lhs_ineq, b_ub=rhs_ineq,
                   A_eq=vertices_lhs_eq, b_eq=vertices_rhs_eq, bounds=bnd,
                   method="revised simplex")
-    print(opt)
+    # print(opt)
     return opt.success, opt.x
 
 

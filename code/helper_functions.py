@@ -158,7 +158,7 @@ def get_vertex_disjoint_directed(g):
         node_str = str(node)
         g_ret.add_node(node_str + "in")
         g_ret.add_node(node_str + "out")
-        g_ret.add_edge(node_str + "in", node_str + "out", capacity=5)
+        g_ret.add_edge(node_str + "in", node_str + "out", capacity=1)
     for st, tt in g.edges:
         s, t = st, tt
         g_ret.add_edge(str(s) + "out", str(t) + "in", capacity=1)
@@ -215,18 +215,18 @@ comp_colors = [
     # # (0, 255, 255),
     # # (127, 255, 212),
     # # (118, 238, 198),
-    # # (102, 205, 170),
-    # # (69, 139, 116),
-    # # (240, 255, 255),
+    (102, 205, 170),
+    (69, 139, 116),
+    # (240, 255, 255),
     # # (224, 238, 238),
     # # (193, 205, 205),
     # # (131, 139, 139),
     # # (227, 207, 87),
     # # (245, 245, 220),
     # (255, 228, 196),
-    # (238, 213, 183),
-    # (205, 183, 158),
-    # (139, 125, 107),
+    (238, 213, 183),
+    (205, 183, 158),
+    (139, 125, 107),
     # (0, 0, 0),
     # (255, 235, 205),
     # (0, 0, 255),
@@ -248,3 +248,65 @@ comp_colors = [
     (138, 54, 15),
     (138, 51, 36),
 ]
+
+
+def generate_grid_fortesting(mat):
+    height = len(mat)
+    width = len(mat[0])
+    path = []
+    graph = nx.Graph()
+    index_to_node = {}
+    node_to_index = {}
+    node_index = -1
+    # set up edges
+    for i in range(height):
+        for j in range(width):
+            if mat[i][j]:
+                continue
+            node_index += 1
+            graph.add_node(node_index)
+            node_to_index[(i, j)] = node_index
+            index_to_node[node_index] = (i, j)
+            if i > 0 and not mat[i - 1][j]:
+                graph.add_edge(node_index, node_to_index[(i - 1, j)])
+            if j > 0 and not mat[i][j - 1]:
+                graph.add_edge(node_index, node_to_index[(i, j - 1)])
+
+    indexes = range(len(graph.nodes))
+
+    graph.add_node('s')
+    for i in indexes[:len(mat[0])]:
+        graph.add_edge('s', i)
+    graph.add_node('t')
+    for i in indexes[-len(mat[0]):]:
+        graph.add_edge(i, 't')
+
+    try:
+        path = nx.shortest_path(graph, 's', 't')
+        start = path[1]
+        target = path[-2]
+    except Exception as e:
+        raise e
+
+    graph.remove_node('s')
+    graph.remove_node('t')
+
+    # # choose for path
+    # while True:
+    #     start = list(graph.nodes)[random.choice(indexes[:len(mat[0])])]
+    #     target = list(graph.nodes)[random.choice(indexes[-len(mat[0]):])]
+    #     if start == target:
+    #         print(start, target)
+    #         continue
+    #     try:
+    #         path = nx.shortest_path(graph, source=start, target=target)
+    #         print(start, target)
+    #         break
+    #     except:
+    #         continue
+    # print(path)
+
+    for node in graph.nodes:
+        graph.nodes[node]["constraint_nodes"] = [node]
+    # print_mat(grid, index_to_node)
+    return mat, graph, start, target, index_to_node, node_to_index
