@@ -1,7 +1,12 @@
+import itertools
+import math
 import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy
+from numpy import sort
+from scipy.optimize import linprog
 
 
 def diff(li1, li2):
@@ -310,3 +315,116 @@ def generate_grid_fortesting(mat):
         graph.nodes[node]["constraint_nodes"] = [node]
     # print_mat(grid, index_to_node)
     return mat, graph, start, target, index_to_node, node_to_index
+
+
+def max_disj_set_lp(nodes, pairs):
+    lhs_ineq = [[1 if x in (s, t) else 0 for x in nodes] for s, t in pairs]
+    rhs_ineq = [1] * len(pairs)
+
+    obj = [-1] * len(nodes)
+
+    bnd = [(0, 1)] * len(nodes)
+
+    # print("nv", nv, "ne", ne, "len", len(vertices_lhs_eq), len(vertices_rhs_eq))
+
+    opt = linprog(c=obj, A_ub=lhs_ineq, b_ub=rhs_ineq,
+                  bounds=bnd,
+                  method="revised simplex")
+    # print(opt)
+    return -opt.fun
+
+
+def max_disj_set_naive(nodes, pairs):
+    g = nx.Graph()
+    for x in nodes:
+        g.add_node(x)
+    for s, t in pairs:
+        g.add_edge(s, t)
+    degrees = g.degree
+    counter = 0
+    # print(sort([degrees[x] for x in g.nodes]))
+    while g.nodes:
+        x = min(g.nodes, key=lambda x: degrees[x])
+        ns = list(g.neighbors(x))
+        for n in ns:
+            g.remove_node(n)
+        g.remove_node(x)
+        counter += 1
+    return counter
+
+
+def max_disj_set_naive_upper_bound(nodes, pairs):
+    g = nx.complete_graph(nodes).to_undirected()
+    for s, t in pairs:
+        g.remove_edge(s, t)
+    degrees = g.degree
+    counter = 0
+    while g.nodes:
+        x = min(g.nodes, key=lambda x: degrees[x])
+        ns = list(g.neighbors(x))
+        for n in ns:
+            g.remove_node(n)
+        g.remove_node(x)
+        counter += 1
+    return len(nodes) - counter
+
+
+def random_combination(iterable, r, n):
+    "Random selection from itertools.combinations(iterable, r)"
+    return [iterable.__next__()] * min(n-1, r)
+
+
+def get_clique(node, graph):
+    nodes = list(graph.neighbors(node)) + [node]
+    l = len(nodes)
+    if l == 1:
+        return [node]
+    tries = 10
+    for i in range(len(nodes)):
+        iter = itertools.combinations(nodes, l - i)
+        n = int(math.factorial(l) / math.factorial(i))
+        for subset in random_combination(iter, tries, n):
+            # print(l-i,subset)
+            if is_subclique(graph, subset):
+                # print("RES: ", subset, graph.degree[node], len(subset))
+                return subset
+    # print("---")
+    # print(len(subset))
+
+
+def is_subclique(G, nodelist):
+    if len(nodelist) == 1:
+        return True
+    H = G.subgraph(nodelist)
+    n = len(nodelist)
+    return H.size() == n * (n - 1) / 2
+
+
+def get_clique_bf(node, graph):
+    # print("NODE: ", node)
+    res = [node]
+    nodes = list(graph.neighbors(node)) + [node]
+    l = len(nodes)
+    for i in range(len(nodes)):
+        for subset in itertools.combinations(nodes, l - i):
+            # print(l-i,subset)
+            if is_subclique(graph, subset):
+                # print("RES: ", subset, graph.degree[node], len(subset))
+                return subset
+
+
+def max_disj_set_lower_bound(nodes, pairs):
+    g = nx.Graph()
+    for x in nodes:
+        g.add_node(x)
+    for s, t in pairs:
+        g.add_edge(s, t)
+    degrees = g.degree
+    counter = 0
+    while g.nodes:
+        x = max(g.nodes, key=lambda x: degrees[x])
+        c = get_clique(x, g)
+        for n in c:
+            g.remove_node(n)
+        counter += 1
+    return counter

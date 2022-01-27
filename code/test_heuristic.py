@@ -70,6 +70,7 @@ def add_rectangle(x, y, h, w, mat):
 # mat = add_rectangle(5,3,4,3,mat)
 # mat = add_rectangle(10,0,5,8,mat)
 # mat = add_rectangle(10,5,9,1,mat)
+
 while True:
     try:
         block_p, width, height = 0.5, 4, 4
