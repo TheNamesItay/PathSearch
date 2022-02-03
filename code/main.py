@@ -1,11 +1,11 @@
 import networkx as nx
 import time as t
 
-from graph_builder import build_room_graph, build_small_grid, build_small_grid_test, build_heuristic_showcase
+from graph_builder import build_room_graph, generate_grids, build_small_grid, build_small_grid_test, build_heuristic_showcase
 from heuristics import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
-from lazy_a_star import max_a_star, max_lazy_a_star
+from lazy_a_star import max_a_star, max_lazy_a_star, max_a_star_ret_states
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
@@ -84,6 +84,30 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
         print(f"EXPANSION RATIO: {name1} / {name2} = {ratio}")
 
 
+def test_heuristics_2(cutoff, generate_func):
+    graphs = generate_func()
+    hs = []
+    for graph, start, target in graphs:
+        start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+        start_path = (start,)
+        start_state = (start, start_path, start_available)
+        g = (lambda x: len(x[PATH]))
+        def f(x):
+            a, b = ex_pairs_using_flow_test(x, graph, target)
+            return (a + g(x)), (b + g(x))
+        h_i = max_a_star_ret_states(graph, start_state, get_goal_func(target), cutoff, f)
+        print(len(h_i))
+        hs += h_i
+    print('len', len(hs))
+    h1 = [a for a,b in hs]
+    h2 = [b for a,b in hs]
+    plt.scatter(h1, h2)
+    plt.plot([0, max(h2)], [0, max(h2)], '--')
+    plt.xlabel("regular flow ex pairs")
+    plt.ylabel("bcc")
+    plt.show()
+
+
 def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
     fig, ax = plt.subplots()
     for name, _ in heuristic_name_func_pairs:
@@ -109,8 +133,8 @@ heuristics = [
     ["bcc nodes", count_nodes_bcc],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
     # ["easy nodes", easy_ex_nodes],
-    ["brute_force_ex_pairs", shimony_pairs_bcc],
-    ["ex_pairs_using_flow", ex_pairs_using_flow],
+    # ["brute_force_ex_pairs", shimony_pairs_bcc],
+    ["ex pairs using flow", ex_pairs_using_flow],
 ]
 # x, index_to_node = build_small_grid()
 # graph, start, target = x[0]
@@ -134,6 +158,6 @@ heuristics = [
 # print(f"easy pairs value: {easy_ex_nodes(start_state, graph, target)}")
 # print(index_to_node[19], index_to_node[23])
 
-# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=30, width=30, block_p=0.5))
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=50, width=50, block_p=0.5))
+# test_heuristics_2(cutoff=10000, generate_func=grid_setup(runs=10, height=40, width=40, block_p=0.3))
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))

@@ -1,4 +1,4 @@
-from helper_functions import intersection, diff
+from helper_functions import intersection, diff, random
 import time as t
 
 F = {}  # state -> weak/strong, F value
@@ -56,6 +56,7 @@ def expand_with_constraints(state, OPEN, CLOSED, G):
 
 def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints):
     global F
+
     def get_state_value(state):
         return state_value(state, weak_h, g)
 
@@ -122,3 +123,21 @@ def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
         expansions += 1
         CLOSED += [q]
     return -1, (expansions, t.time() - start_time, h_vals, lens)
+
+
+def max_a_star_ret_states(G, start_state, is_goal, cutoff, h=lambda a: random.randint(0, 1000), expand=expand_with_constraints):
+    OPEN = [(start_state, h(start_state))]
+    CLOSED = []
+    expansions = 0
+
+    while OPEN:
+        if expansions > cutoff > 0:
+            return [x[1] for x in CLOSED + OPEN]
+
+        q = max(OPEN, key=lambda x: x[1][0])
+        OPEN.remove(q)
+        if not is_goal(q[0]):
+            OPEN += [(x, h(x)) for x in expand(q[0], OPEN, CLOSED, G)]
+        CLOSED += [q]
+        expansions += 1
+    return [x[1] for x in CLOSED + OPEN]

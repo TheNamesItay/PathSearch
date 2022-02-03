@@ -363,9 +363,10 @@ def get_dis_pairs(s, t, nodes, good_pairs):
     possible_pairs = []
     nodes = sort(nodes)
     # nodes = [tuple(node) for node in nodes]
-    print(nodes)
+    # print(nodes)
     for i in range(len(nodes)):
         node1 = nodes[i]
+        # print(node1, s, t)
         if node1 == s or node1 == t:
             continue
         for j in range(i + 1, len(nodes)):
@@ -479,12 +480,12 @@ def flow_linear_programming(s, x, y, t, g):
     opt = linprog(c=obj, A_ub=lhs_ineq, b_ub=rhs_ineq,
                   A_eq=vertices_lhs_eq, b_eq=vertices_rhs_eq, bounds=bnd,
                   method="revised simplex")
-    # print(opt)
+    print(opt.success)
     return opt.success, opt.x
 
 
-def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
-    print(f"s:{s}, t:{t}")
+def get_pairs_flow_and_dis_paths(graph, s, t, di_graph, flow_alg):
+    # print(f"s:{s}, t:{t}")
     good_pairs = set()
     for path in nx.node_disjoint_paths(graph, s, t):
         p = len(path)
@@ -492,56 +493,15 @@ def get_pairs_flow_and_dis_paths(graph, s, t, di_graph):
             for j in range(i, p):
                 good_pairs.add((path[i], path[j]))
     g_di = di_graph.copy()
-    # print(graph.nodes)
-    # print("goooooood", good_pairs)
+    # print(len(list(graph.nodes)))
     possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs)  ### NOT REALLY DISJOINT
-    ex_pairs = {}
-    for x, y, in possible_pairs:
-        print("possible pairs len: ",len(possible_pairs))
-        success1, solution1 = flow_linear_programming(s, x, y, t, g_di)
-        if success1:
-            possible_pairs = delete_not_possible_pairs(possible_pairs, solution1, s, x, y, t, g_di)
-        else:
-            print('failed with ', x, y)
-        success2, solution2 = flow_linear_programming(s, y, x, t, g_di)
-        if success2:
-            possible_pairs = delete_not_possible_pairs(possible_pairs, solution2, s, x, y, t, g_di)
-        if not success1 and not success2:
-            ex_pairs[x] = y
-
-    # ex_pairs = {
-    #     x: y for x, y in possible_pairs
-    #     if not flow_linear_programming(s, x, y, t, g_di)
-    #        and not flow_linear_programming(s, y, x, t, g_di)
-    # }
-    print("ex_pairs len: ", len(ex_pairs))
-    ep = list(ex_pairs.items())
-    counter = 0
-    if len(ep) > 0:
-        print(len(ep))
-    for x, y in ep:
-        try:
-            ex_pairs.pop(x)
-            counter += 1
-        except Exception as e:
-            pass
-        try:
-            ex_pairs.pop(y)
-        except Exception as e:
-            pass
-        try:
-            ex_pairs.pop(get_key(x, ex_pairs))
-        except Exception as e:
-            pass
-        try:
-            ex_pairs.pop(get_key(y, ex_pairs))
-        except Exception as e:
-            pass
-    print("new len: ", counter)
-    print(ep)
-    # print(ep[0])
-    # print(index_to_node[ep[0][0]], index_to_node[ep[0][1]])
-    return counter
+    # print(len(possible_pairs))
+    pairs = [(x1,x2) for x1,x2 in possible_pairs if
+             not (flow_alg(s, x1, x2, t, g_di)
+                and flow_alg(s, x2, x1, t, g_di))]
+    res = max_disj_set_upper_bound(graph.nodes, pairs)
+    # print('ret', res)
+    return res
 
 def delete_not_possible_pairs(possible_pairs, solution, s, x, y, t, g):
     print('start deleteing pairs')
@@ -562,7 +522,7 @@ def delete_not_possible_pairs(possible_pairs, solution, s, x, y, t, g):
     return possible_pairs
 
 def find_path(flow, s, t, g):
-    print('finding path', s, t)
+    # print('finding path', s, t)
     edges = list(g.edges)
     ne = len(edges)
     cur_v = str(s)+'in'
@@ -585,7 +545,7 @@ def find_path(flow, s, t, g):
 
 
 
-def ex_pairs_using_flow(state, G, target):
+def ex_pairs_using_3flow(state, G, target):
     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
                                                                                                         G, target)
     if relevant_comps == -1 or len(relevant_comps) == 0:
@@ -601,10 +561,10 @@ def ex_pairs_using_flow(state, G, target):
 
     n = len(relevant_comps)
 
-    ex_pairs = 0
+    ex_nodes = 0
     bcc_path_size = 1
     for i in range(n):
-        print('i: ', i)
+        # print('i: ', i)
         comp = relevant_comps[i]
         bcc_path_size += len(comp) - 1
         # getting cut nodes
@@ -616,14 +576,104 @@ def ex_pairs_using_flow(state, G, target):
             out_node = target
         else:
             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
-        print('here1')
+        # print('here1')
         graph = reach_nested.subgraph(comp)
         di_graph = get_vertex_disjoint_directed(graph)
-        print('here2')
-        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph)
-        print('here3')
-        ex_pairs += to_add
+        # print('here2')
+        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph, flow_linear_programming)
+        # print('here3', to_add)
+        ex_nodes += to_add
         # if to_add > 0:
         #     print(to_add, len(comp), n)
-    print('++++++++++++ ', bcc_path_size, ex_pairs)
-    return bcc_path_size - ex_pairs
+    # print('++++++++++++ ', bcc_path_size, ex_pairs)
+    return ex_nodes
+
+
+def ex_pairs_using_flow(state, G, target):
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
+    if relevant_comps == -1 or len(relevant_comps) == 0:
+        return -1 # no path
+    cut_node_dict = {}
+    for node in reachables:
+        comps = bcc_dict[node]
+        # if node in more than 1 component, its a cut node
+        if len(comps) > 1:
+            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+                cut_node_dict[(c1, c2)] = node
+                cut_node_dict[(c2, c1)] = node
+
+    n = len(relevant_comps)
+
+    ex_nodes = 1
+    bcc_path_size = 1
+    for i in range(n):
+        # print('i: ', i)
+        comp = relevant_comps[i]
+        bcc_path_size += len(comp) - 1
+        # getting cut nodes
+        if i == 0:
+            in_node = current_node
+        else:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
+            out_node = target
+        else:
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        # print('here1')
+        graph = reach_nested.subgraph(comp)
+        di_graph = get_vertex_disjoint_directed(graph)
+        # print('here2')
+        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph, has_flow)
+        # print('here3', to_add)
+        ex_nodes += to_add - 1
+        # print(bcc_path_size - ex_nodes)
+        # if to_add > 0:
+        #     print(to_add, len(comp), n)
+    # print('++++++++++++ ', bcc_path_size, ex_pairs)
+    return ex_nodes
+
+
+def ex_pairs_using_flow_test(state, G, target):
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
+    if relevant_comps == -1 or len(relevant_comps) == 0:
+        return -1, -1 # no path
+    cut_node_dict = {}
+    for node in reachables:
+        comps = bcc_dict[node]
+        # if node in more than 1 component, its a cut node
+        if len(comps) > 1:
+            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+                cut_node_dict[(c1, c2)] = node
+                cut_node_dict[(c2, c1)] = node
+
+    n = len(relevant_comps)
+
+    ex_nodes = 1
+    bcc_path_size = 1
+    for i in range(n):
+        # print('i: ', i)
+        comp = relevant_comps[i]
+        bcc_path_size += len(comp) - 1
+        # getting cut nodes
+        if i == 0:
+            in_node = current_node
+        else:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
+            out_node = target
+        else:
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        # print('here1')
+        graph = reach_nested.subgraph(comp)
+        di_graph = get_vertex_disjoint_directed(graph)
+        # print('here2')
+        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph, has_flow)
+        # print('here3', to_add)
+        ex_nodes += to_add - 1
+        # print(bcc_path_size - ex_nodes)
+        # if to_add > 0:
+        #     print(to_add, len(comp), n)
+    # print('++++++++++++ ', bcc_path_size, ex_pairs)
+    return ex_nodes, bcc_path_size

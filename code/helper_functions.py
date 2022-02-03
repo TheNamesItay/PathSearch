@@ -84,57 +84,6 @@ def print_mat(mat, dict):
         print(arr)
 
 
-def generate_random_grid(height, width, block_p):
-    grid = [[(0 if random.uniform(0, 1) > block_p else 1) for i in range(width)] for j in range(height)]
-    return generate_grid(grid)
-
-
-def generate_grid(grid):
-    height = len(grid)
-    width = len(grid[0])
-    path = []
-    graph = nx.Graph()
-    index_to_node = {}
-
-    # set up edges
-    for i in range(height):
-        for j in range(width):
-            if grid[i][j]:
-                continue
-            node = (i, j)
-            graph.add_node(node)
-            index_to_node[(i, j)] = node
-            if i > 0 and not grid[i - 1][j]:
-                graph.add_edge(node, (i - 1, j))
-            if j > 0 and not grid[i][j - 1]:
-                graph.add_edge(node, (i, j - 1))
-
-    # choose for path
-    while True:
-        indexes = range(len(graph.nodes))
-        print(indexes)
-        start = list(graph.nodes)[random.choice(indexes)]
-        target = list(graph.nodes)[random.choice(indexes)]
-        if start == target:
-            print(start, target)
-            continue
-        try:
-            path = nx.shortest_path(graph, source=start, target=target)
-            break
-        except:
-            continue
-    print(path)
-
-    for node in graph.nodes:
-        graph.nodes[node]["constraint_nodes"] = [node]
-    # print_mat(grid, index_to_node)
-    return graph, start, target
-
-
-def generate_grids(num_of_runs, height, width, block_p):
-    return [generate_random_grid(height, width, block_p) for i in range(num_of_runs)]
-
-
 def get_directed_graph(g):
     g_new = nx.DiGraph()
     d = list(g.nodes).index
@@ -143,7 +92,7 @@ def get_directed_graph(g):
     for (st, tt) in g.edges:
         s = d(st)
         t = d(tt)
-        print('s-', s, ' t-', t)
+        # print('s-', s, ' t-', t)
         node1 = s + t + "'"
         node2 = s + t + "''"
         g.add_node(node1)
@@ -413,7 +362,7 @@ def get_clique_bf(node, graph):
                 return subset
 
 
-def max_disj_set_lower_bound(nodes, pairs):
+def max_disj_set_upper_bound(nodes, pairs):
     g = nx.Graph()
     for x in nodes:
         g.add_node(x)
@@ -421,6 +370,8 @@ def max_disj_set_lower_bound(nodes, pairs):
         g.add_edge(s, t)
     degrees = g.degree
     counter = 0
+    # print("nodes", list(g.nodes))
+    # print("pairs", pairs)
     while g.nodes:
         x = max(g.nodes, key=lambda x: degrees[x])
         c = get_clique(x, g)
