@@ -378,4 +378,31 @@ def max_disj_set_upper_bound(nodes, pairs):
         for n in c:
             g.remove_node(n)
         counter += 1
+    # print('counter', counter)
+    # print('----------------------------------')
     return counter
+
+
+def max_bad_set_upper_bound(nodes, pairs):
+    g = nx.Graph()
+    for x in nodes:
+        g.add_node(x)
+    for s, t in pairs:
+        g.add_edge(s, t)
+    degrees = g.degree
+    counter = 0
+    # print("nodes", list(g.nodes))
+    # print("pairs", pairs)
+    while g.nodes:
+        x = max(g.nodes, key=lambda x: degrees[x])
+        if degrees[x] == 0:
+            break
+        # c = get_clique(x, g)
+        c = [x, list(g.neighbors(x))[0]] if list(g.neighbors(x)) else [x]
+        for n in c:
+            g.remove_node(n)
+        counter += 1
+    # print('counter', counter)
+    # print('----------------------------------')
+    return counter
+

@@ -130,11 +130,11 @@ def grid_setup(runs, height, width, block_p):
 heuristics = [
     # ["reachables", reachable_nodes_heuristic],
     # ["availables", available_nodes_heuristic],
-    ["bcc nodes", count_nodes_bcc],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
     # ["easy nodes", easy_ex_nodes],
     # ["brute_force_ex_pairs", shimony_pairs_bcc],
-    ["ex pairs using flow", ex_pairs_using_flow],
+    ["ex pairs using flow", ex_pairs_using_reg_flow],
+    ["bcc nodes", count_nodes_bcc],
 ]
 # x, index_to_node = build_small_grid()
 # graph, start, target = x[0]
@@ -158,6 +158,6 @@ heuristics = [
 # print(f"easy pairs value: {easy_ex_nodes(start_state, graph, target)}")
 # print(index_to_node[19], index_to_node[23])
 
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=50, width=50, block_p=0.5))
-# test_heuristics_2(cutoff=10000, generate_func=grid_setup(runs=10, height=40, width=40, block_p=0.3))
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=lambda :[build_heuristic_showcase(40)])
+# test_heuristics_2(cutoff=10000, generate_func=grid_setup())
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
