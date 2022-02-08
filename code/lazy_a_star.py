@@ -16,6 +16,7 @@ H_VALUE = 1
 G_VALUE = 2
 
 
+
 # F_VALUE = 1
 
 def get_h_and_g(state):
@@ -23,11 +24,11 @@ def get_h_and_g(state):
     return F[state][H_VALUE], F[state][G_VALUE]
 
 
-def state_value(state, weak_h, g):
+def state_value(state, weak_h, g, weight):
     global F
     if state not in F.keys():
         F[state] = ('weak', weak_h(state), g(state))
-    return F[state][H_VALUE] + F[state][G_VALUE]
+    return weight * F[state][H_VALUE] + F[state][G_VALUE]   #TODO: check when to add the weight
 
 
 def set_to_strong_state_value(state, strong_h, g):
@@ -54,11 +55,11 @@ def expand_with_constraints(state, OPEN, CLOSED, G):
     return ret
 
 
-def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints):
+def max_weighted_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_with_constraints, weight=1):
     global F
 
     def get_state_value(state):
-        return state_value(state, weak_h, g)
+        return state_value(state, weak_h, g, weight)
 
     F = {}
     start_time = t.time()
@@ -91,11 +92,11 @@ def max_lazy_a_star(G, start_state, is_goal, weak_h, strong_h, g, expand=expand_
         CLOSED += [q]
 
 
-def max_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints):
+def max_weighted_a_star(G, start_state, is_goal, h, g, expand=expand_with_constraints, weight=1):
     global F
 
     def get_state_value(state):
-        return state_value(state, h, g)
+        return state_value(state, h, g, weight=weight)
 
     F = {}
     start_time = t.time()

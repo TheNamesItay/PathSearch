@@ -5,7 +5,7 @@ from graph_builder import build_room_graph, generate_grids, build_small_grid, bu
 from heuristics import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
-from lazy_a_star import max_a_star, max_lazy_a_star, max_a_star_ret_states
+from lazy_a_star import max_weighted_a_star, max_weighted_lazy_a_star, max_a_star_ret_states
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
@@ -25,13 +25,13 @@ def run(heuristic, graph, start, target, cutoff, timeout):
     start_path = (start,)
     start_state = (start, start_path, start_available)
     h = (lambda x: heuristic(x, graph, target))
-    strong_h = (lambda x: ex_pairs_using_flow(x, graph, target))
+    strong_h = (lambda x: ex_pairs(x, graph, target))
     g = (lambda x: len(x[PATH]))
-    end_state, data = max_a_star(graph,
-                                 start_state,
-                                 get_goal_func(target),
-                                 h,
-                                 g)
+    end_state, data = max_weighted_a_star(graph,
+                                          start_state,
+                                          get_goal_func(target),
+                                          h,
+                                          g)
     expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = data
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
 
@@ -93,7 +93,7 @@ def test_heuristics_2(cutoff, generate_func):
         start_state = (start, start_path, start_available)
         g = (lambda x: len(x[PATH]))
         def f(x):
-            a, b = ex_pairs_using_flow_test(x, graph, target)
+            a, b = ex_pairs_test(x, graph, target)
             return (a + g(x)), (b + g(x))
         h_i = max_a_star_ret_states(graph, start_state, get_goal_func(target), cutoff, f)
         print(len(h_i))
@@ -132,16 +132,18 @@ heuristics = [
     # ["availables", available_nodes_heuristic],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
     # ["easy nodes", easy_ex_nodes],
-    ["brute force ex pairs", shimony_pairs_bcc],
-    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
-    ["ex pairs using reg flow", ex_pairs_using_reg_flow],
+    # ["brute force ex pairs", ex_pairs_using_brute_force],
     ["bcc nodes", count_nodes_bcc],
+    ["ex pairs using reg flow", ex_pairs_using_reg_flow],
+    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
+    # ["ex pairs using LP", ex_pairs_using_3_flow],
+
 ]
-# x, index_to_node = build_small_grid()
-# graph, start, target = x[0]
-# start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
-# start_path = (start,)
-# start_state = (start, start_path, start_available)
+x = build_small_grid()
+graph, start, target = x[0]
+start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+start_path = (start,)
+start_state = (start, start_path, start_available)
 
 # print_graph(graph)
 
@@ -154,11 +156,11 @@ heuristics = [
 # print(index_to_node[2], index_to_node[13])
 # print(index_to_node[3], index_to_node[23])
 #
-# print(f"flow value: {ex_pairs_using_flow(start_state, graph, target)}")
-# print(f"brute force value: {shimony_pairs_bcc(start_state, graph, target)}")
-# print(f"easy pairs value: {easy_ex_nodes(start_state, graph, target)}")
+print(f"reg flow value: {ex_pairs_using_reg_flow(start_state, graph, target)}")
+print(f"LP value: {ex_pairs_using_pulp_flow(start_state, graph, target)}")
+print(f"BCC value: {count_nodes_bcc(start_state, graph, target)}")
 # print(index_to_node[19], index_to_node[23])
 
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=lambda :[build_heuristic_showcase(40)])
-# test_heuristics_2(cutoff=10000, generate_func=grid_setup())
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
+# test_heuristics(cutoff=100, generate_func=build_small_grid)
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))

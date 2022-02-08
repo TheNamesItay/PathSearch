@@ -179,3 +179,92 @@ print(time.time() - curr_t)
 p = [((0, 2), (1, 2)), ((0, 2), (2, 2)), ((0, 2), (2, 3)), ((0, 2), (3, 0)), ((0, 2), (3, 1)), ((0, 2), (3, 2)), ((0, 2), (4, 0)), ((0, 2), (4, 1)), ((0, 2), (4, 2)), ((0, 2), (4, 3)), ((0, 3), (1, 2)), ((0, 3), (2, 2)), ((0, 3), (2, 3)), ((0, 3), (3, 0)), ((0, 3), (3, 1)), ((0, 3), (3, 2)), ((0, 3), (4, 0)), ((0, 3), (4, 1)), ((0, 3), (4, 2)), ((0, 3), (4, 3)), ((0, 4), (1, 2)), ((0, 4), (2, 2)), ((0, 4), (2, 3)), ((0, 4), (3, 0)), ((0, 4), (3, 1)), ((0, 4), (3, 2)), ((0, 4), (4, 0)), ((0, 4), (4, 1)), ((0, 4), (4, 2)), ((0, 4), (4, 3)), ((1, 2), (2, 2)), ((1, 2), (2, 3)), ((1, 2), (3, 0)), ((1, 2), (3, 1)), ((1, 2), (3, 2)), ((1, 2), (4, 0)), ((1, 2), (4, 1)), ((1, 2), (4, 2)), ((1, 2), (4, 3)), ((1, 4), (2, 2)), ((1, 4), (2, 3)), ((1, 4), (3, 0)), ((1, 4), (3, 1)), ((1, 4), (3, 2)), ((1, 4), (4, 0)), ((1, 4), (4, 1)), ((1, 4), (4, 2)), ((1, 4), (4, 3)), ((2, 2), (3, 0)), ((2, 2), (3, 1)), ((2, 3), (3, 0)), ((2, 3), (3, 1)), ((2, 3), (3, 2)), ((2, 3), (4, 0)), ((2, 3), (4, 1)), ((2, 3), (4, 2)), ((2, 3), (4, 3)), ((2, 4), (3, 0)), ((2, 4), (3, 1)), ((2, 4), (3, 2)), ((2, 4), (4, 0)), ((2, 4), (4, 1)), ((2, 4), (4, 2)), ((2, 4), (4, 3)), ((3, 0), (3, 1)), ((3, 0), (3, 4)), ((3, 0), (4, 3)), ((3, 1), (3, 4)), ((3, 4), (4, 0)), ((3, 4), (4, 1)), ((3, 4), (4, 2)), ((3, 4), (4, 3))]
 
 s = (5, (0, 5), (2, 3, 4, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 20, 21, 22, 23, 24))
+
+def ex_pairs_test(state, G, target):
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
+    if relevant_comps == -1 or len(relevant_comps) == 0:
+        return -1, -1 # no path
+    cut_node_dict = {}
+    for node in reachables:
+        comps = bcc_dict[node]
+        # if node in more than 1 component, its a cut node
+        if len(comps) > 1:
+            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+                cut_node_dict[(c1, c2)] = node
+                cut_node_dict[(c2, c1)] = node
+
+    n = len(relevant_comps)
+
+    res_lp, res_reg, res_pulp = 1, 1, 1
+    bcc_path_size = 1
+    for i in range(n):
+        # print('i: ', i)
+        comp = relevant_comps[i]
+        bcc_path_size += len(comp) - 1
+        # getting cut nodes
+        if i == 0:
+            in_node = current_node
+        else:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
+            out_node = target
+        else:
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        # print('here1')
+        graph = reach_nested.subgraph(comp)
+        # di_graph = get_vertex_disjoint_directed(graph)
+        res_lp_add, res_reg_add, res_pulp_add = get_pairs_flow_and_dis_paths_test(graph, in_node, out_node)
+        # print('here3', to_add)
+        res_lp += res_lp_add
+        res_reg += res_reg_add
+        res_pulp += res_pulp_add
+        # print(bcc_path_size - ex_nodes)
+        # if to_add > 0:
+        #     print(to_add, len(comp), n)
+    # print('++++++++++++ ', bcc_path_size, ex_pairs)
+    return res_lp, res_reg, res_pulp
+
+
+def get_pairs_flow_and_dis_paths_test(graph, s, t):
+    # print(f"s:{s}, t:{t}")
+    good_pairs = set()
+    for path in nx.node_disjoint_paths(graph, s, t):
+        p = len(path)
+        for i in range(p):
+            for j in range(i, p):
+                good_pairs.add((path[i], path[j]))
+    # print(len(list(graph.nodes)))
+    possible_pairs = get_dis_pairs(s, t, graph.nodes, good_pairs)  ### NOT REALLY DISJOINT
+    # print(len(possible_pairs))
+
+    pairs_lp = [(x1,x2) for x1,x2 in possible_pairs if
+             ((not flow_linear_programming(s, x1, x2, t, graph))
+                and (not flow_linear_programming(s, x2, x1, t, graph)))]
+    pairs_pulp = [(x1, x2) for x1, x2 in possible_pairs if
+                 ((not flow_linear_programming_pulp(s, x1, x2, t, graph))
+                  and (not flow_linear_programming_pulp(s, x2, x1, t, graph)))]
+    pairs_reg = [(x1, x2) for x1, x2 in possible_pairs if
+             ((not has_flow(s, x1, x2, t, graph))
+              and (not has_flow(s, x2, x1, t, graph)))]
+    print('---------------------------------')
+    print('nodes: ', [index_to_node[x] for x in graph.nodes])
+    print('len lp', len(pairs_lp))
+    print('len reg', len(pairs_reg))
+    print('pulp len', len(pairs_pulp))
+    print('in LP but not reg: ', [(index_to_node[x[0]], index_to_node[x[1]]) for x in pairs_lp if x not in pairs_reg])
+    print('in REG but not lp: ', [(index_to_node[x[0]], index_to_node[x[1]]) for x in pairs_reg if x not in pairs_lp])
+    print('++++')
+    print('in LP but not pulp: ', [(index_to_node[x[0]], index_to_node[x[1]]) for x in pairs_lp if x not in pairs_pulp])
+    print('in pulp but not lp: ', [(index_to_node[x[0]], index_to_node[x[1]]) for x in pairs_pulp if x not in pairs_lp])
+    res_reg = max_disj_set_upper_bound(graph.nodes, pairs_reg)
+    res_pulp = max_disj_set_upper_bound(graph.nodes, pairs_pulp)
+    res_lp = max_disj_set_upper_bound(graph.nodes, pairs_lp)
+    print("res REG", res_reg)
+    print("res LP", res_lp)
+    print("res PULP", res_pulp)
+    if res_lp != res_reg or res_lp != res_pulp:
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    print('---------------------------------')
+    # print('ret', res)
+    return res_lp, res_reg, res_pulp
