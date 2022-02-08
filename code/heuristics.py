@@ -565,7 +565,7 @@ def flow_linear_programming(s, x, y, t, g):
     return opt.success
 
 
-def get_pairs_flow_and_dis_paths(graph, s, t, di_graph, flow_alg):
+def get_pairs_flow_and_dis_paths(graph, s, t, flow_alg):
     # print(f"s:{s}, t:{t}")
     good_pairs = set()
     for path in nx.node_disjoint_paths(graph, s, t):
@@ -670,9 +670,8 @@ def ex_pairs_using_flow(state, G, target, flow_alg):
             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
         # print('here1')
         graph = reach_nested.subgraph(comp)
-        di_graph = get_vertex_disjoint_directed(graph)
         # print('++++comp', [index_to_node[x] for x in comp])
-        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, di_graph, flow_alg)
+        to_add = get_pairs_flow_and_dis_paths(graph, in_node, out_node, flow_alg)
         # print('here3', to_add)
         relevant_nodes += to_add - 1
         # print(bcc_path_size - ex_nodes)

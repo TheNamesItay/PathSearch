@@ -132,8 +132,9 @@ heuristics = [
     # ["availables", available_nodes_heuristic],
     # ["shimony pairs heuristics approx", shimony_pairs_bcc_aprox],
     # ["easy nodes", easy_ex_nodes],
-    # ["brute_force_ex_pairs", shimony_pairs_bcc],
-    ["ex pairs using flow", ex_pairs_using_reg_flow],
+    ["brute force ex pairs", shimony_pairs_bcc],
+    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
+    ["ex pairs using reg flow", ex_pairs_using_reg_flow],
     ["bcc nodes", count_nodes_bcc],
 ]
 # x, index_to_node = build_small_grid()
