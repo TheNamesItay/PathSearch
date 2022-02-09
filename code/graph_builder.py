@@ -218,3 +218,47 @@ def generate_grid(grid):
 
 def generate_grids(num_of_runs, height, width, block_p):
     return [generate_random_grid(height, width, block_p) for i in range(num_of_runs)]
+
+
+def generate_grid2(grid):
+    height = len(grid)
+    width = len(grid[0])
+    path = []
+    graph = nx.Graph()
+    index_to_node = {}
+    node_index = 0
+    node_to_index = {}
+    # set up edges
+    for i in range(height):
+        for j in range(width):
+            if grid[i][j]:
+                continue
+            graph.add_node(node_index)
+            node_to_index[(i, j)] = node_index
+            index_to_node[node_index] = (i, j)
+            if i > 0 and not grid[i - 1][j]:
+                graph.add_edge(node_index, node_to_index[(i - 1, j)])
+            if j > 0 and not grid[i][j - 1]:
+                graph.add_edge(node_index, node_to_index[(i, j - 1)])
+            node_index += 1
+
+    # choose for path
+    while True:
+        indexes = range(len(graph.nodes))
+        # print(indexes)
+        start = list(graph.nodes)[random.choice(indexes)]
+        target = list(graph.nodes)[random.choice(indexes)]
+        if start == target:
+            # print(start, target)
+            continue
+        try:
+            path = nx.shortest_path(graph, source=start, target=target)
+            break
+        except:
+            continue
+    # print(path)
+
+    for node in graph.nodes:
+        graph.nodes[node]["constraint_nodes"] = [node]
+    # print_mat(grid, index_to_node)
+    return graph, start, target, index_to_node, node_to_index

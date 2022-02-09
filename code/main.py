@@ -66,14 +66,18 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
             print(f"\tNAME: {name}, \t\tPATH-LENGTH: {len(path)}, \t\tEXPANSIONS: {expansions} \t\tRUNTIME: {runtime}")
         display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run)
         graph_i += 1
+
     print()
     print("RESULTS:")
+    res = []
     for name, h in heuristic_name_func_pairs:
         avg_length = sum_path_lengths[name] / runs
         avg_expansions = sum_expansions[name] / runs
         avg_runtime = sum_runtimes[name] / runs
         print(f"\tNAME: {name}, "
               f"\t\tPATH-LENGTH: {avg_length}, \t\tEXPANSIONS: {avg_expansions} \t\tRUNTIME: {avg_runtime}")
+        res += [(name, avg_length, avg_expansions, avg_runtime)]
+
     print()
     if len(heuristic_name_func_pairs) == 2:
         name1, name2 = heuristic_name_func_pairs[0][0], heuristic_name_func_pairs[1][0]
@@ -84,28 +88,28 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
         print(f"EXPANSION RATIO: {name1} / {name2} = {ratio}")
 
 
-def test_heuristics_2(cutoff, generate_func):
-    graphs = generate_func()
-    hs = []
-    for graph, start, target in graphs:
-        start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
-        start_path = (start,)
-        start_state = (start, start_path, start_available)
-        g = (lambda x: len(x[PATH]))
-        def f(x):
-            a, b = ex_pairs_test(x, graph, target)
-            return (a + g(x)), (b + g(x))
-        h_i = max_a_star_ret_states(graph, start_state, get_goal_func(target), cutoff, f)
-        print(len(h_i))
-        hs += h_i
-    print('len', len(hs))
-    h1 = [a for a,b in hs]
-    h2 = [b for a,b in hs]
-    plt.scatter(h1, h2)
-    plt.plot([0, max(h2)], [0, max(h2)], '--')
-    plt.xlabel("regular flow ex pairs")
-    plt.ylabel("bcc")
-    plt.show()
+# def test_heuristics_2(cutoff, generate_func):
+#     graphs = generate_func()
+#     hs = []
+#     for graph, start, target in graphs:
+#         start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+#         start_path = (start,)
+#         start_state = (start, start_path, start_available)
+#         g = (lambda x: len(x[PATH]))
+#         def f(x):
+#             a, b = ex_pairs_test(x, graph, target)
+#             return (a + g(x)), (b + g(x))
+#         h_i = max_a_star_ret_states(graph, start_state, get_goal_func(target), cutoff, f)
+#         print(len(h_i))
+#         hs += h_i
+#     print('len', len(hs))
+#     h1 = [a for a,b in hs]
+#     h2 = [b for a,b in hs]
+#     plt.scatter(h1, h2)
+#     plt.plot([0, max(h2)], [0, max(h2)], '--')
+#     plt.xlabel("regular flow ex pairs")
+#     plt.ylabel("bcc")
+#     plt.show()
 
 
 def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
@@ -119,10 +123,6 @@ def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
     plt.show()
 
 
-def regular_graph_setup(runs, num_of_nodes, prob_of_edge):
-    return lambda: generate_graphs(runs, num_of_nodes, prob_of_edge)
-
-
 def grid_setup(runs, height, width, block_p):
     return lambda: generate_grids(runs, height, width, block_p)
 
@@ -134,33 +134,14 @@ heuristics = [
     # ["easy nodes", easy_ex_nodes],
     # ["brute force ex pairs", ex_pairs_using_brute_force],
     ["bcc nodes", count_nodes_bcc],
+    ["test bcc nodes", count_nodes_bcc_testy],
     ["ex pairs using reg flow", ex_pairs_using_reg_flow],
-    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
+    # ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
     # ["ex pairs using LP", ex_pairs_using_3_flow],
 
 ]
-x = build_small_grid()
-graph, start, target = x[0]
-start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
-start_path = (start,)
-start_state = (start, start_path, start_available)
 
-# print_graph(graph)
-
-# plt.show()
-
-# print(index_to_node[3], index_to_node[13])
-# print(index_to_node[4], index_to_node[13])
-# print(index_to_node[9], index_to_node[13])
-# #
-# print(index_to_node[2], index_to_node[13])
-# print(index_to_node[3], index_to_node[23])
-#
-print(f"reg flow value: {ex_pairs_using_reg_flow(start_state, graph, target)}")
-print(f"LP value: {ex_pairs_using_pulp_flow(start_state, graph, target)}")
-print(f"BCC value: {count_nodes_bcc(start_state, graph, target)}")
-# print(index_to_node[19], index_to_node[23])
-
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
+# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
 # test_heuristics(cutoff=100, generate_func=build_small_grid)
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
+test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=20, width=20, block_p=0.5))

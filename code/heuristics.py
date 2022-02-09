@@ -39,7 +39,6 @@ def count_nodes_bcc(state, G, target):
     return ret
 
 
-
 def is_legit_shimony_pair(s, x, y, t, g):
     segments = [[s, x], [x, y], [y, t]]
     paths = []
@@ -119,17 +118,15 @@ def is_legit_shimony_pair(s, x, y, t, g):
 #     return sum
 
 
-
-
 def has_flow(s, x, y, t, g):
     # print(list(g.nodes))
     g = get_vertex_disjoint_directed(g)
     g.add_edge("flow_start", str(s) + "out", capacity=1)
     g.add_edge("flow_start", str(x) + "out", capacity=2)
-    g[str(s)+'in'][str(s)+'out']['capacity'] = 0
-    g[str(x)+'in'][str(x)+'out']['capacity'] = 0
-    g[str(y)+'in'][str(y)+'out']['capacity'] = 0
-    g[str(t)+'in'][str(t)+'out']['capacity'] = 0
+    g[str(s) + 'in'][str(s) + 'out']['capacity'] = 0
+    g[str(x) + 'in'][str(x) + 'out']['capacity'] = 0
+    g[str(y) + 'in'][str(y) + 'out']['capacity'] = 0
+    g[str(t) + 'in'][str(t) + 'out']['capacity'] = 0
     g.add_edge(str(t) + "in", "flow_end", capacity=1)
     g.add_edge(str(y) + "in", "flow_end", capacity=2)
     flow_value, flow_dict = nx.maximum_flow(g, "flow_start", "flow_end")
@@ -150,7 +147,7 @@ def flow_linear_programming_pulp(s, x, y, t, g):
 
     prob = LpProblem("find_flow", LpMinimize)
 
-    vars = flatten([[(e, f) for e in edges] for f in [1,2,3]])
+    vars = flatten([[(e, f) for e in edges] for f in [1, 2, 3]])
     vars = LpVariable.dicts("es", vars, lowBound=0, upBound=1)
 
     # objective
@@ -160,7 +157,7 @@ def flow_linear_programming_pulp(s, x, y, t, g):
 
     # max total flow is 1 for each edge
     for e in edges:
-        prob += lpSum([vars[(e, f)] for f in [1,2,3]]) <= 1, f"{e} total flow"
+        prob += lpSum([vars[(e, f)] for f in [1, 2, 3]]) <= 1, f"{e} total flow"
 
     # in flow is 1 max
     for node in nodes:
@@ -169,15 +166,18 @@ def flow_linear_programming_pulp(s, x, y, t, g):
 
     for node in nodes:
         if node not in (str(s) + "in", str(x) + "in"):
-            prob += lpSum([vars[(e, 1)] for e in g.in_edges(node)] + [-1 * vars[(e, 1)] for e in g.out_edges(node)]) == 0, f"{node} in = out f1"
+            prob += lpSum([vars[(e, 1)] for e in g.in_edges(node)] + [-1 * vars[(e, 1)] for e in
+                                                                      g.out_edges(node)]) == 0, f"{node} in = out f1"
 
     for node in nodes:
         if node not in (str(x) + "in", str(y) + "in"):
-            prob += lpSum([vars[(e, 2)] for e in g.in_edges(node)] + [-1 * vars[(e, 2)] for e in g.out_edges(node)]) == 0, f"{node} in = out f2"
+            prob += lpSum([vars[(e, 2)] for e in g.in_edges(node)] + [-1 * vars[(e, 2)] for e in
+                                                                      g.out_edges(node)]) == 0, f"{node} in = out f2"
 
     for node in nodes:
         if node not in (str(y) + "in", str(t) + "in"):
-            prob += lpSum([vars[(e, 3)] for e in g.in_edges(node)] + [-1 * vars[(e, 3)] for e in g.out_edges(node)]) == 0, f"{node} in = out f3"
+            prob += lpSum([vars[(e, 3)] for e in g.in_edges(node)] + [-1 * vars[(e, 3)] for e in
+                                                                      g.out_edges(node)]) == 0, f"{node} in = out f3"
 
     # s -> x constraint
     prob += lpSum(vars[((str(s) + 'in', str(s) + 'out'), 1)]) == 1, f"S out 1flow"
@@ -209,7 +209,6 @@ def flow_linear_programming_pulp(s, x, y, t, g):
     return prob.status == 1
 
 
-
 def get_max_nodes(component, in_node, out_node, algorithm):
     # print(f"s:{s}, t:{t}")
     good_pairs = set()
@@ -221,7 +220,7 @@ def get_max_nodes(component, in_node, out_node, algorithm):
     # print(len(list(graph.nodes)))
     possible_pairs = get_dis_pairs(in_node, out_node, component.nodes, good_pairs)  ### NOT REALLY DISJOINT
     # print(len(possible_pairs))
-    pairs = [(x1,x2) for x1,x2 in possible_pairs if
+    pairs = [(x1, x2) for x1, x2 in possible_pairs if
              (not algorithm(in_node, x1, x2, out_node, component)
               and not algorithm(in_node, x2, x1, out_node, component))]
     # print('pairs', len(pairs))
@@ -230,26 +229,67 @@ def get_max_nodes(component, in_node, out_node, algorithm):
     return res
 
 
-def ex_pairs_using_3_flow(state, G, target):
-    return ex_pairs(state, G, target, flow_linear_programming)
-
 def ex_pairs_using_reg_flow(state, G, target):
     return ex_pairs(state, G, target, has_flow)
 
+
 def ex_pairs_using_pulp_flow(state, G, target):
     return ex_pairs(state, G, target, flow_linear_programming_pulp)
+
 
 def ex_pairs_using_brute_force(state, G, target):
     return ex_pairs(state, G, target, is_legit_shimony_pair)
 
 
+def count_nodes_bcc_testy(state, G, target):
+    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+                                                                                                        G, target)
+    if relevant_comps == -1:
+        return -1  # no path
+    cut_node_dict = {}
+    for node in reachables:
+        comps = bcc_dict[node]
+        # if node in more than 1 component, its a cut node
+        if len(comps) > 1:
+            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+                cut_node_dict[(c1, c2)] = node
+                cut_node_dict[(c2, c1)] = node
+
+    n = len(relevant_comps)
+
+    relevant_nodes = 1
+    bcc_path_size = 1
+    for i in range(n):
+        # print('i: ', i)
+        comp = relevant_comps[i]
+        bcc_path_size += len(comp) - 1
+        # getting cut nodes
+        if i == 0:
+            in_node = current_node
+        else:
+            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+        if i == n - 1:
+            out_node = target
+        else:
+            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+        # print('here1')
+        graph = reach_nested.subgraph(comp)
+        # print('++++comp', [index_to_node[x] for x in comp])
+        to_add = len(list(graph.nodes))
+        # print('here3', to_add)
+        relevant_nodes += to_add - 1
+        # print(bcc_path_size - ex_nodes)
+        # if to_add > 0:
+        #     print(to_add, len(comp), n)
+    # print('####################### ', bcc_path_size, relevant_nodes)
+    return relevant_nodes
 
 
 def ex_pairs(state, G, target, algorithm):
     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
                                                                                                         G, target)
-    if relevant_comps == -1 or len(relevant_comps) == 0:
-        return -1 # no path
+    if relevant_comps == -1:
+        return -1  # no path
     cut_node_dict = {}
     for node in reachables:
         comps = bcc_dict[node]
@@ -287,5 +327,3 @@ def ex_pairs(state, G, target, algorithm):
         #     print(to_add, len(comp), n)
     # print('####################### ', bcc_path_size, relevant_nodes)
     return relevant_nodes
-
-

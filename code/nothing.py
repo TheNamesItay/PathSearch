@@ -23,6 +23,21 @@
     # if len(ep) > 0:
     #     print(len(ep))
     # for x, y in ep:
+
+
+
+def count_nodes_bcc(state, G, target):
+    _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
+    if relevant_comps == -1:
+        return -1  # if theres no path
+    ret = 1
+    for comp in relevant_comps:
+        ret += len(comp) - 1
+    return ret
+
+
+
+
     #     try:
     #         ex_pairs.pop(x)
     #         counter += 1
