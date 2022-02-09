@@ -261,4 +261,4 @@ def generate_grid2(grid):
     for node in graph.nodes:
         graph.nodes[node]["constraint_nodes"] = [node]
     # print_mat(grid, index_to_node)
-    return graph, start, target, index_to_node, node_to_index
+    return grid, graph, start, target, index_to_node, node_to_index

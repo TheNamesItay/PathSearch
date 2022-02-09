@@ -1,7 +1,7 @@
 import networkx as nx
 import time as t
 
-from graph_builder import build_room_graph, generate_grids, build_small_grid, build_small_grid_test, build_heuristic_showcase
+from graph_builder import *
 from heuristics import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
@@ -143,5 +143,5 @@ heuristics = [
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid_test)
 # test_heuristics(cutoff=100, generate_func=build_small_grid)
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=20, width=20, block_p=0.5))
+# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=40, width=40, block_p=0.5))
 
