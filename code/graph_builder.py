@@ -131,7 +131,7 @@ def build_small_grid_test():
     for node in graph.nodes:
         graph.nodes[node]["constraint_nodes"] = [node]
 
-    return mat, graph, node_to_index[(0, 0)], node_to_index[(4, 4)], index_to_node, node_to_index
+    return [(graph, node_to_index[(0, 0)], node_to_index[(4, 4)], index_to_node, node_to_index)]
 
 
 def build_heuristic_showcase(n):

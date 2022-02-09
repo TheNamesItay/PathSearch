@@ -26,14 +26,13 @@ def run(heuristic, graph, start, target, cutoff, timeout):
     start_state = (start, start_path, start_available)
     h = (lambda x: heuristic(x, graph, target))
     strong_h = (lambda x: ex_pairs(x, graph, target))
-    g = (lambda x: len(x[PATH]))
     end_state, data = max_weighted_a_star(graph,
                                           start_state,
                                           get_goal_func(target),
                                           h,
                                           g)
-    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len = data
-    return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len
+    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen = data
+    return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen
 
 
 def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
@@ -55,7 +54,7 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
         print()
         print(f"GRAPH {graph_i}:")
         for name, h in heuristic_name_func_pairs:
-            path, expansions, runtime, hs, pl = run(h, graph, start, target, cutoff, timeout)
+            path, expansions, runtime, hs, pl, ns = run(h, graph, start, target, cutoff, timeout)
             sum_path_lengths[name] += len(path)
             sum_expansions[name] += expansions
             sum_runtimes[name] += runtime
@@ -134,14 +133,15 @@ heuristics = [
     # ["easy nodes", easy_ex_nodes],
     # ["brute force ex pairs", ex_pairs_using_brute_force],
     ["bcc nodes", count_nodes_bcc],
-    ["test bcc nodes", count_nodes_bcc_testy],
+    # ["test bcc nodes", count_nodes_bcc_testy],
     ["ex pairs using reg flow", ex_pairs_using_reg_flow],
-    # ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
+    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
     # ["ex pairs using LP", ex_pairs_using_3_flow],
 
 ]
 
-# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
+# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid_test)
 # test_heuristics(cutoff=100, generate_func=build_small_grid)
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
 test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=20, width=20, block_p=0.5))
+

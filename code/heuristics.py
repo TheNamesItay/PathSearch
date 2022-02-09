@@ -21,7 +21,7 @@ def update_index_to_node(itn):
 
 def g(state):
     path = state[PATH]
-    g_value = len(path)
+    g_value = len(path) - 1
     return g_value
 
 
@@ -223,7 +223,7 @@ def get_max_nodes(component, in_node, out_node, algorithm):
     pairs = [(x1, x2) for x1, x2 in possible_pairs if
              (not algorithm(in_node, x1, x2, out_node, component)
               and not algorithm(in_node, x2, x1, out_node, component))]
-    # print('pairs', len(pairs))
+    # print('pairs', [(index_to_node[x], index_to_node[y]) for x,y in pairs])
     res = max_disj_set_upper_bound(component.nodes, pairs)
     # print('ret', res)
     return res

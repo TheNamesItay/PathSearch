@@ -101,6 +101,7 @@ def max_weighted_a_star(G, start_state, is_goal, h, g, expand=expand_with_constr
     F = {}
     start_time = t.time()
     h_vals = []
+    nodes_chosen = []
     lens = []
     OPEN = [start_state]
     CLOSED = []
@@ -117,13 +118,14 @@ def max_weighted_a_star(G, start_state, is_goal, h, g, expand=expand_with_constr
 
         h_vals += [get_state_value(q)]
         lens += [len(q[PATH])]
+        nodes_chosen += [q[CURRENT_NODE]]
 
         if is_goal(q):
-            return q, (expansions, t.time() - start_time, h_vals, lens)
+            return q, (expansions, t.time() - start_time, h_vals, lens, nodes_chosen)
         OPEN += expand(q, OPEN, CLOSED, G)
         expansions += 1
         CLOSED += [q]
-    return -1, (expansions, t.time() - start_time, h_vals, lens)
+    return -1, (expansions, t.time() - start_time, h_vals, lens, nodes_chosen)
 
 
 def max_a_star_ret_states(G, start_state, is_goal, cutoff, h=lambda a: random.randint(0, 1000), expand=expand_with_constraints):

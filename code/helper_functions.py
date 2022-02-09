@@ -332,21 +332,32 @@ def random_combination(iterable, r, n):
 
 
 def get_clique(node, graph):
-    nodes = list(graph.neighbors(node)) + [node]
-    l = len(nodes)
-    if l == 1:
+    g = graph.subgraph(list(graph.neighbors(node)))
+    if not g.nodes:
         return [node]
-    tries = 10
-    for i in range(len(nodes)):
-        iter = itertools.combinations(nodes, l - i)
-        n = int(math.factorial(l) / math.factorial(i))
-        for subset in random_combination(iter, tries, n):
-            # print(l-i,subset)
-            if is_subclique(graph, subset):
-                # print("RES: ", subset, graph.degree[node], len(subset))
-                return subset
-    # print("---")
-    # print(len(subset))
+    else:
+        x = max(g.nodes, key=lambda x: g.degree[x])
+        return [node] + get_clique(x, g)
+
+#
+#
+# def get_clique(node, graph):
+#     nodes = list(graph.neighbors(node)) + [node]
+#     l = len(nodes)
+#     print('---------', l, node)
+#     if l == 1:
+#         return [node]
+#     tries = 10
+#     for i in range(len(nodes)):
+#         iter = itertools.combinations(nodes, l - i)
+#         n = int(math.factorial(l) / math.factorial(i))
+#         for subset in random_combination(iter, tries, n):
+#             # print(l-i,subset)
+#             if is_subclique(graph, subset):
+#                 # print("RES: ", subset, graph.degree[node], len(subset))
+#                 return subset
+#     # print("---")
+#     # print(len(subset))
 
 
 def is_subclique(G, nodelist):
@@ -378,11 +389,12 @@ def max_disj_set_upper_bound(nodes, pairs):
         g.add_edge(s, t)
     degrees = g.degree
     counter = 0
-    # print("nodes", list(g.nodes))
+    # print("nodes", len(list(g.nodes)))
     # print("pairs", pairs)
     while g.nodes:
         x = max(g.nodes, key=lambda x: degrees[x])
         c = get_clique(x, g)
+        # print(len(c))
         for n in c:
             g.remove_node(n)
         counter += 1
