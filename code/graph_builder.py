@@ -213,7 +213,7 @@ def generate_grid(grid):
     for node in graph.nodes:
         graph.nodes[node]["constraint_nodes"] = [node]
     # print_mat(grid, index_to_node)
-    return graph, start, target
+    return grid, graph, start, target
 
 
 def generate_grids(num_of_runs, height, width, block_p):

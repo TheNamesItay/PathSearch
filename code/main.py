@@ -35,6 +35,22 @@ def run(heuristic, graph, start, target, cutoff, timeout):
     return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen
 
 
+def run_weighted(heuristic, graph, start, target, weight, cutoff, timeout):
+    start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+    start_path = (start,)
+    start_state = (start, start_path, start_available)
+    h = (lambda x: heuristic(x, graph, target))
+    strong_h = (lambda x: ex_pairs(x, graph, target))
+    end_state, data = max_weighted_a_star(graph,
+                                          start_state,
+                                          get_goal_func(target),
+                                          h,
+                                          g,
+                                          weight=weight)
+    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen = data
+    return end_state[PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen
+
+
 def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
     graphs = generate_func()
     runs = len(graphs)
