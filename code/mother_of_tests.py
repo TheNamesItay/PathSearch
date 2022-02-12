@@ -22,9 +22,9 @@ for bp in block_ps:
         graphs += [(bp,) + g for g in generate_grids(runs_per_params, n, m, bp)]
 
 
-def write_to_file(h_name, graph_mat, expansions, runtime, hs, ls, grid_n, astar_w, block_p):
+def write_to_file(h_name, graph_mat, expansions, runtime, hs, ls, grid_n, astar_w, block_p, index_to_node):
     with open('test_results.txt', 'a') as f:
-        f.write(str((grid_n, astar_w, block_p, h_name, graph_mat, expansions, runtime, hs, ls)))
+        f.write(str((grid_n, astar_w, block_p, h_name, graph_mat, expansions, runtime, hs, ls, index_to_node)))
         f.write('\n')
 
 
@@ -35,4 +35,4 @@ for w in weights:
         print(bp, len(mat), bp)
         for name, h in heuristics:
             path, expansions, runtime, hs, ls, ns = run_weighted(h, graph, start, target, w, CUTOFF, TIMEOUT)
-            write_to_file(name, mat, expansions, runtime, hs, ls, len(mat), w, bp)
+            write_to_file(name, mat, expansions, runtime, hs, ls, len(mat), w, bp, index_to_node)
