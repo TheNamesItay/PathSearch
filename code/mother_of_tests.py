@@ -15,7 +15,7 @@ heuristics = [
 ]
 weights = [0.5 + 0.1 * i for i in range(6)]
 grid_sizes = [(10 * i, 10 * i) for i in range(1,7)]
-block_ps = [0.1 * i for i in range(5,7)]
+block_ps = [0.1 * i for i in range(4,7)]
 
 graphs = [(-1,) + build_small_grid2()]
 for bp in block_ps:
