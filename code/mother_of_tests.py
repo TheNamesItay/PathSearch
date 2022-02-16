@@ -1,7 +1,8 @@
 from main import *
-
+import csv
 
 FILENAME = 'test_results.txt'
+CSV_FILENAME = 'test_results.csv'
 
 CUTOFF = 200000
 TIMEOUT = -1
@@ -21,17 +22,30 @@ for bp in block_ps:
     for n, m in grid_sizes:
         graphs += [(bp,) + g for g in generate_grids(runs_per_params, n, m, bp)]
 
+header = ['Grid Size', 'Blocks', 'A* weight', 'Heuristic', 'Expansions Avg', 'Runtime Avg']
+with open(CSV_FILENAME, 'a', encoding='UTF8') as csv_file:
+    writer = csv.writer(csv_file)
+    writer.writerow(header)
 
 def write_to_file(h_name, graph_mat, expansions, runtime, hs, ls, grid_n, astar_w, block_p):
     with open('test_results.txt', 'a') as f:
         f.write(str((grid_n, astar_w, block_p, h_name, graph_mat, expansions, runtime, hs, ls)))
         f.write('\n')
 
+def write_to_csv_file(h_name, expansions, runtime, grid_n, astar_w, block_p):
+    with open(CSV_FILENAME, 'a', encoding='UTF8') as csv_file:
+        writer = csv.writer(csv_file)
+        row = [str(x) for x in [grid_n, block_p, astar_w, h_name, expansions, runtime]]
+        writer.writerow(row)
+
+
 
 print(len(graphs))
 for w in weights:
     print('w == ', w)
-    for bp, mat, graph, start, target in graphs[1:5]:
+    for bp, mat, graph, start, target in graphs:
         for name, h in heuristics:
             path, expansions, runtime, hs, ls, ns = run_weighted(h, graph, start, target, w, CUTOFF, TIMEOUT)
-            write_to_file(name, mat, expansions, runtime, hs, ls, len(mat), w, bp)
+            n = len(mat)
+            write_to_file(name, mat, expansions, runtime, hs, ls, n, w, bp)
+            write_to_csv_file(name, expansions, runtime, n, w, bp)
