@@ -13,6 +13,15 @@ NUM_OF_PAIRS = 5
 N = 0
 index_to_node = {}
 
+BCC_VALUES = {}  # (comp, in_node, out_node) -> H value
+
+COMP = 0
+IN_NODE = 1
+OUT_NODE = 2
+
+def reset_bcc_values():
+    global BCC_VALUES
+    BCC_VALUES.clear()
 
 def update_index_to_node(itn):
     global index_to_node
@@ -209,7 +218,11 @@ def flow_linear_programming_pulp(s, x, y, t, g):
     return prob.status == 1
 
 
-def get_max_nodes(component, in_node, out_node, algorithm):
+def get_max_nodes(component, in_node, out_node, algorithm, incremental=True):
+    comp_nodes = tuple(sorted(component.nodes))
+    bcc = (comp_nodes, in_node, out_node)
+    if incremental and bcc in BCC_VALUES:
+        return BCC_VALUES[bcc]
     # print(f"s:{s}, t:{t}")
     good_pairs = set()
     for path in nx.node_disjoint_paths(component, in_node, out_node):
@@ -226,6 +239,8 @@ def get_max_nodes(component, in_node, out_node, algorithm):
     # print('pairs', [(index_to_node[x], index_to_node[y]) for x,y in pairs])
     res = max_disj_set_upper_bound(component.nodes, pairs)
     # print('ret', res)
+    if incremental:
+        BCC_VALUES[bcc] = res
     return res
 
 
@@ -306,6 +321,7 @@ def ex_pairs(state, G, target, algorithm):
     for i in range(n):
         # print('i: ', i)
         comp = relevant_comps[i]
+        # print(f"compppp: {sorted(comp)}")
         bcc_path_size += len(comp) - 1
         # getting cut nodes
         if i == 0:
@@ -318,6 +334,7 @@ def ex_pairs(state, G, target, algorithm):
             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
         # print('here1')
         graph = reach_nested.subgraph(comp)
+        # print(f"graph: {sorted(graph.nodes)}")
         # print('++++comp', [index_to_node[x] for x in comp])
         to_add = get_max_nodes(graph, in_node, out_node, algorithm)
         # print('here3', to_add)
@@ -327,4 +344,3 @@ def ex_pairs(state, G, target, algorithm):
         #     print(to_add, len(comp), n)
     # print('####################### ', bcc_path_size, relevant_nodes)
     return relevant_nodes
-

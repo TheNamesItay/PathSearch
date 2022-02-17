@@ -3,6 +3,7 @@ import time as t
 
 F = {}  # state -> weak/strong, F value
 
+
 MAX_PATH_LEN = 100
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 FAILURE = -1
