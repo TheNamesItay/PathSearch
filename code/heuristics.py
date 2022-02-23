@@ -32,24 +32,13 @@ def update_index_to_node(itn):
 
 
 def g(state):
-    path = state[PATH]
+    path = state.path
     g_value = len(path) - 1
     return g_value
 
 
 def function(state, heuristic, G, target):
     return heuristic(state, G, target)
-
-
-def count_nodes_bcc(state, G, target):
-    _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
-    # print("releveannnttttt", relevant_comps)
-    if relevant_comps == -1:
-        return -1  # if theres no path
-    ret = 1
-    for comp in relevant_comps:
-        ret += len(comp) - 1
-    return ret
 
 
 def is_legit_shimony_pair(s, x, y, t, g):
@@ -242,9 +231,9 @@ def get_max_nodes(component, in_node, out_node, algorithm):
         for i in range(p):
             for j in range(i, p):
                 good_pairs.add((path[i], path[j]))
-    r_pairs = get_all_r_pairs(component)
-    print(len(component.nodes) * (len(component.nodes)-1), len(r_pairs))
-    good_pairs = good_pairs.union(r_pairs)
+    # r_pairs = get_all_r_pairs(component)
+    # print(len(component.nodes) * (len(component.nodes)-1), len(r_pairs))
+    # good_pairs = good_pairs.union(r_pairs)
     possible_pairs = get_dis_pairs(in_node, out_node, component.nodes, good_pairs)  ### NOT REALLY DISJOINT
     # print(len(possible_pairs))
     pairs = [(x1, x2) for x1, x2 in possible_pairs if
@@ -322,16 +311,29 @@ def prefiltering(component, in_node, out_node):
     return good_pairs, ex_pairs
 
 
-def ex_pairs_using_reg_flow(state, G, target):
+def ex_pairs_using_reg_flow(state, G, target, is_incremental=False):
+    if is_incremental:
+        return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, has_flow))
     return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, has_flow))
 
 
+def count_nodes_bcc(state, G, target, is_incremental=False):
+    if is_incremental:
+        return ex_pairs_incremental(state, G, target, lambda g, i, o: len(g.nodes))
+    _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
+    # print("releveannnttttt", relevant_comps)
+    if relevant_comps == -1:
+        return -1  # if theres no path
+    ret = 1
+    for comp in relevant_comps:
+        ret += len(comp) - 1
+    return ret
+
+
 def ex_pairs_using_sage_flow(state, G, target):
+    if is_incremental:
+        return ex_pairs_incremental(state, G, target, lambda g, i, o: get_max_nodes(g, i, o, sage_flow))
     return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, sage_flow))
-
-
-def ex_pairs_using_brute_force(state, G, target):
-    return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, is_legit_shimony_pair))
 
 
 def calc_comps(state, G, target, algorithm):
@@ -375,49 +377,43 @@ def calc_comps(state, G, target, algorithm):
 
 def ex_pairs(state, G, target, algorithm):
     comp_hs = calc_comps(state, G, target, algorithm)
+    if isinstance(comp_hs, int) and comp_hs < 0:
+        return -1
     relevant_nodes = 1 + sum([c.h - 1 for c in comp_hs])
     return relevant_nodes
 
 
 def ex_pairs_incremental(state, G, target, algorithm):
+    # print('hi')
     current_node = state.current
     if current_node == target:
-        return 0
+        return 1
     if not state.bccs:
+        # print('start 1')
         state.bccs = calc_comps(state, G, target, algorithm)
+        # print('end 1')
         # insert as object
     else:
         bccs = state.bccs
         current_comp_in = bccs[0].in_node
         if current_comp_in != current_node:
-            print('!!!!!!!!!!!!!!!!!!!!!', current_node in bccs[0].nodes)
+            # print('!!!!!!!!!!!!!!!!!!!!!', current_node in bccs[0].nodes)
             first_comp_nodes = bccs[0].nodes
             p_availables = list(intersection(state.available_nodes, first_comp_nodes)) + [current_node]
             pseudo_state = State(current_node, [state.path[-2], current_node], p_availables)
             pseudo_target = bccs[0].out_node
             pseudo_G = G.subgraph(first_comp_nodes)
+            # print('start 2')
             extra_comps = calc_comps(pseudo_state, pseudo_G, pseudo_target, algorithm)
-            state.print()
-            state.print_bccs()
+            # print('end 1')
+            # state.print()
+            # state.print_bccs()
             state.bccs = extra_comps + bccs[1:]
             # insert as object
-    state.print()
-    state.print_bccs()
+    # state.print()
+    # state.print_bccs()
     relevant_nodes = 1 + sum([c.h - 1 for c in state.bccs])
     return relevant_nodes
-
-
-
-def ex_pairs_using_reg_flow_incremental(state, G, target):
-    return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, has_flow))
-
-
-def ex_pairs_using_sage_flow_incremental(state, G, target):
-    return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, sage_flow))
-
-
-def ex_pairs_using_brute_force_incremental(state, G, target):
-    return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, is_legit_shimony_pair))
 
 #
 # def count_nodes_bcc_testy(state, G, target):

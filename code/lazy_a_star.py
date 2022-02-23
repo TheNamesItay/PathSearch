@@ -1,5 +1,6 @@
 from helper_functions import intersection, diff, random
 import time as t
+from state import State
 
 F = {}  # state -> weak/strong, F value
 
@@ -41,8 +42,13 @@ def expand_with_constraints(state, OPEN, CLOSED, G, is_incremental):
     available = state.available_nodes
     next_out_node = bccs[0].out_node if is_incremental else -1
     path = state.path
-    for v in intersection(neighbors, available):
+    # print('***************************')
+    # state.print()
+    # state.print_bccs()
+    neighbor_pool = intersection(intersection(neighbors, available), state.bccs[0].nodes) if state.bccs else intersection(neighbors, available)
+    for v in neighbor_pool:
         new_path = path + (v,)
+        # print('---', new_path)
         new_availables = tuple(diff(available, G.nodes[current_v]["constraint_nodes"]))
         new_state = State(v, new_path, new_availables)
         if is_incremental:
@@ -50,6 +56,8 @@ def expand_with_constraints(state, OPEN, CLOSED, G, is_incremental):
             new_state.bccs = new_bccs
         if new_state not in OPEN and new_state not in CLOSED:
             ret.append(new_state)
+    # print('***************************')
+
     return ret
 
 
@@ -95,8 +103,7 @@ def expand_with_constraints(state, OPEN, CLOSED, G, is_incremental):
 #         CLOSED += [q]
 #
 
-def max_weighted_a_star(G, start_state, is_goal, h, g, is_incremental=False, expand=expand_with_constraints, weight=1,
-                        cutoff=-1, timeout=-1):
+def max_weighted_a_star(G, start_state, is_goal, h, g, is_incremental=False, expand=expand_with_constraints, weight=1, cutoff=-1, timeout=-1):
     global F
     global state_index
 
@@ -126,7 +133,7 @@ def max_weighted_a_star(G, start_state, is_goal, h, g, is_incremental=False, exp
         lens += [len(q.path)]
         nodes_chosen += [q.current]
 
-        if expansions > cutoff > -1 or t.time() - start_time > timeout > 0:
+        if expansions > cutoff > -1 or t.time() - start_time > timeout > -1:
             return q, (expansions, t.time() - start_time, h_vals, lens, nodes_chosen, len(OPEN) + len(CLOSED))
         if is_goal(q):
             return q, (expansions, t.time() - start_time, h_vals, lens, nodes_chosen, len(OPEN) + len(CLOSED))

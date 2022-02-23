@@ -8,6 +8,8 @@ import numpy as np
 from numpy import sort
 from scipy.optimize import linprog
 
+from state import State
+
 
 CURRENT_NODE = 0
 PATH = 1
@@ -394,11 +396,11 @@ def triconnected_components(component):
 def draw_grid(folder_name, pic_name, graph, mat, start, target, index_to_node):
     start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
     start_path = (start,)
-    state = (start, start_path, start_available)
+    state = State(start, start_path, start_available)
     t = index_to_node[target]
     _, _, comps, _, _, _ = bcc_thingy(state, graph, target)
-    current_node = index_to_node[state[0]]
-    path = [index_to_node[x] for x in state[1]]
+    current_node = index_to_node[state.current]
+    path = [index_to_node[x] for x in state.path]
     height = len(mat)
     width = len(mat[0])
     data = [[(0, 0, 0) if mat[j][i] else (255, 255, 255) for j in range(len(mat[0]))] for i in range(len(mat))]
@@ -422,5 +424,5 @@ def draw_grid(folder_name, pic_name, graph, mat, start, target, index_to_node):
     ax.set_xticks(np.arange(-.5, width, 1))
     ax.set_yticks(np.arange(-.5, height, 1))
     plt.title('graph ' + str(pic_name))
-    save_results_to = "D:/Heuristic Tests/graphs/"
+    save_results_to = "D:\sage\SageMath 9.3\dump"
     fig.savefig(save_results_to + f'graph_{str(pic_name)}.png')

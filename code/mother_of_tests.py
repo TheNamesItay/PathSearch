@@ -3,24 +3,24 @@ import csv
 from read_csv import read_raw_csv
 from main import *
 
-SHOWCASE_CSV = 'D:/Heuristic Tests/results/test_showcases2.csv'
-GRAPHS_FILENAME = 'D:/Heuristic Tests/results/saved_graphs.txt'
-CSV_FILENAME = 'D:/Heuristic Tests/results/raw_results2.csv'
-AVG_CSV = 'D:/Heuristic Tests/results/test_results2.csv'
+SHOWCASE_CSV = 'D:/sage/SageMath 9.3/dump/test_showcases2.csv'
+GRAPHS_FILENAME = 'D:/sage/SageMath 9.3/dump/saved_graphs.txt'
+CSV_FILENAME = 'D:/sage/SageMath 9.3/dump/raw_results2.csv'
+AVG_CSV = 'D:/sage/SageMath 9.3/dump/test_results2.csv'
 
 CUTOFF = 200000
 TIMEOUT = 1000
 
 runs_per_params = 10
 heuristics = [
-    ["bcc nodes", count_nodes_bcc],
-    ["ex pairs using reg flow", ex_pairs_using_reg_flow],
+    ["bcc incremental", count_nodes_bcc, True],
+    ["bcc", count_nodes_bcc, False],
     # ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
     # ["ex pairs no filter", ex_pairs_with_no_prefiltering],
 ]
 weights = [1]  # [0.7 + 0.1 * i for i in range(6)]
-grid_sizes = [(10 * i, 10 * i) for i in range(1, 5)]
-block_ps = [0.1 * i for i in range(4, 7)]
+grid_sizes = [(15 * i, 15 * i) for i in range(1,2)]
+block_ps = [0.1 * i for i in range(5, 6)]
 
 
 def write_header_file(file_name, header):
@@ -29,9 +29,9 @@ def write_header_file(file_name, header):
         writer.writerow(header)
 
 
-def write_to_file(file_name, h_name, graph_mat, expansions, runtime, hs, ls, grid_n, astar_w, block_p):
+def write_to_file(file_name, graph_i, h_name, graph_mat, expansions, runtime, hs, ls, grid_n, astar_w, block_p):
     with open(file_name, 'a') as f:
-        f.write(str((grid_n, astar_w, block_p, h_name, graph_mat, expansions, runtime, hs, ls)))
+        f.write(str((graph_i, grid_n, astar_w, block_p, h_name, graph_mat, expansions, runtime, hs, ls)))
         f.write('\n')
 
 
@@ -48,14 +48,14 @@ def save_graph_picture(folder_name, pic_name, mat, graph, start, target, itn):
 
 def save_heuristic_plot(folder_name, graph_i, hs_per_run):
     fig, ax = plt.subplots()
-    for name, _ in heuristics:
+    for name, _, _ in heuristics:
         # print(name, hs_per_run[name][graph_i])
         ax.plot(range(len(hs_per_run[name][graph_i])), hs_per_run[name][graph_i], label=f"hs - {name}")
         # plt.plot(range(len(pl_per_run[name][graph_i])), pl_per_run[name][graph_i], label=f"pl - {name}")
     plt.title('graph ' + str(graph_i))
     plt.legend()
     # plt.show()
-    save_results_to = 'D:/Heuristic Tests/scatters/'
+    save_results_to = 'D:\sage\SageMath 9.3\dump'
 
     fig.savefig(save_results_to + f'scatter_{str(graph_i)}.png')
 
@@ -76,14 +76,14 @@ def test_heuristics(raw_csv_file_name, graphs_folder, scatter_folder):
         for n, m in grid_sizes:
             graphs += [(bp,) + g for g in generate_grids(runs_per_params, n, m, bp)]
     runs = len(graphs)
-    names = [name for name, h in heuristics]
+    names = [name for name, h, _ in heuristics]
     sum_runtimes = dict.fromkeys(names, 0)
     sum_expansions = dict.fromkeys(names, 0)
     sum_path_lengths = dict.fromkeys(names, 0)
     hs_per_run = {}
     ls_per_run = {}
     expansions_per_run = {}
-    for name, _ in heuristics:
+    for name, _, _ in heuristics:
         hs_per_run[name] = [0] * runs
         ls_per_run[name] = [0] * runs
         expansions_per_run[name] = [0] * runs
@@ -92,10 +92,10 @@ def test_heuristics(raw_csv_file_name, graphs_folder, scatter_folder):
     for w in weights:
         print('w == ', w)
         for bp, mat, graph, start, target, itn in graphs:
-            # print(f"GRAPH {graph_i}:")
-            for name, h in heuristics:
+            print(f"GRAPH {graph_i}:")
+            for name, h, is_incremental in heuristics:
                 path, expansions, runtime, hs, ls, ns, ng = run_weighted(h, graph, start, target, w, CUTOFF, TIMEOUT,
-                                                                         True)
+                                                                         is_incremental)
                 sum_path_lengths[name] += len(path)
                 sum_expansions[name] += expansions
                 sum_runtimes[name] += runtime
@@ -164,4 +164,4 @@ def mother_of_tests(raw_csv_file_name, avg_csv, graphs_folder, scatter_folder, g
         read_raw_csv(raw_csv_file_name, avg_csv)
 
 
-mother_of_tests(CSV_FILENAME, AVG_CSV, 'graphs', 'scatters', grids=False, showcases=False)
+mother_of_tests(CSV_FILENAME, AVG_CSV, 'graphs', 'scatters', grids=True, showcases=False)

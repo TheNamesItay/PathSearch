@@ -3,12 +3,12 @@ import networkx as nx
 import time as t
 from multiprocessing import Process
 
-from code.state import State
+from state import State
 from graph_builder import *
 from heuristics import *
 # from astar import limited_AStar as astar
 from astar import FAILURE
-from lazy_a_star import max_weighted_a_star, max_weighted_lazy_a_star, max_a_star_ret_states
+from lazy_a_star import max_weighted_a_star, max_a_star_ret_states
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 CURRENT_NODE = 0
@@ -43,7 +43,7 @@ def run_weighted(heuristic, graph, start, target, weight, cutoff, timeout, is_in
     start_path = (start,)
 #     bcc_dict = {}
     start_state = State(start, start_path, start_available)
-    h = (lambda x: heuristic(x, graph, target))
+    h = (lambda x: heuristic(x, graph, target, is_incremental))
     # stron = (lambda x: ex_pairs(x, graph, target))
     end_state, data = max_weighted_a_star(graph,
                                           start_state,
@@ -210,7 +210,7 @@ heuristics = [
 # t = tuple(s)
 # print(t)
 
-test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
+# test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=build_small_grid)
 # test_heuristics(cutoff=100, generate_func=build_small_grid)
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=regular_graph_setup(runs=10, num_of_nodes=50, prob_of_edge=0.1))
 # test_heuristics(heuristics, cutoff=-1, timeout=-1, generate_func=grid_setup(runs=10, height=20, width=20, block_p=0.5))

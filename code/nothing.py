@@ -10,15 +10,19 @@ from playing_around import is_legit_shimony_pair as is_shimony
 import time
 
 
-mat, g, start, t, index_to_node, node_to_index = build_small_grid2()
+mat, g, start, t = generate_grids(1, 15, 15, 0.3)[0]
 
 node = start
 path = []
 av = diff(g.nodes, path)
 state = (node, tuple(path), tuple(av))
 
+print(time.time())
 reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state, g, t)
+print(time.time())
 
 comp_g = g.subgraph(max(relevant_comps, key=len))
-# comp_g = sage.graphs
-print()
+
+print(len(comp_g))
+print(triconnected_components(g.subgraph(comp_g)))
+print(time.time())
