@@ -13,33 +13,7 @@ import time
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
 
 
-def draw_grid(mat, state, t, comps, index_to_node):
-    current_node = index_to_node[state[0]]
-    path = [index_to_node[x] for x in state[1]]
-    height = len(mat)
-    width = len(mat[0])
-    data = [[(0, 0, 0) if mat[j][i] else (255, 255, 255) for j in range(len(mat[0]))] for i in range(len(mat))]
-    if comps:
-        for i in range(len(comps)):
-            color = comp_colors[i % len(comp_colors)]
-            comp = comps[i]
-            for c in comp:
-                node = index_to_node[c]
-                data[node[1]][node[0]] = color
-        for v in path:
-            data[v[1]][v[0]] = (50, 50, 150)
-    data[current_node[1]][current_node[0]] = (255, 0, 255)
-    data[t[1]][t[0]] = (0, 255, 0)
 
-    fig, ax = plt.subplots()
-    ax.imshow(data, )
-
-    # draw gridlines
-    ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=0.5)
-    ax.set_xticks(np.arange(-.5, width, 1))
-    ax.set_yticks(np.arange(-.5, height, 1))
-
-    plt.show()
 
 
 def add_rectangle(x, y, h, w, mat):

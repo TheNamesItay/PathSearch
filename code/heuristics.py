@@ -4,24 +4,27 @@ import networkx as nx
 from numpy import sort, math
 from scipy.optimize import linprog
 from pulp import *
+
+from state import BiCompEntry
 from helper_functions import *
 
 CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
+# BCC_VALUES = 3
 NUM_OF_PAIRS = 5
 N = 0
 index_to_node = {}
 
-BCC_VALUES = {}  # (comp, in_node, out_node) -> H value
-
+BCC_VALUES = {}  # [((comp, in_node, out_node), value)]
+COMPONENT = 0
+VALUE = 1
 COMP = 0
 IN_NODE = 1
 OUT_NODE = 2
 
-def reset_bcc_values():
-    global BCC_VALUES
-    BCC_VALUES.clear()
+
+
 
 def update_index_to_node(itn):
     global index_to_node
@@ -40,6 +43,7 @@ def function(state, heuristic, G, target):
 
 def count_nodes_bcc(state, G, target):
     _, _, relevant_comps, _, _, _ = bcc_thingy(state, G, target)
+    # print("releveannnttttt", relevant_comps)
     if relevant_comps == -1:
         return -1  # if theres no path
     ret = 1
@@ -148,6 +152,7 @@ def has_flow(s, x, y, t, g):
     return flow_value == 3
 
 
+
 def flow_linear_programming_pulp(s, x, y, t, g):
     g = get_vertex_disjoint_directed(g)
     edges = list(g.edges)
@@ -217,12 +222,19 @@ def flow_linear_programming_pulp(s, x, y, t, g):
     #         print(v.name, "=", v.varValue)
     return prob.status == 1
 
+def get_all_r_pairs(comp):
+    # print('start')
+    comp_g = Graph(comp)
+    t = spqr_tree(comp_g)
+    ps = [all_pairs(list(g.networkx_graph().nodes)) for t, g in t if t == 'R']
+    res = set()
+    for s in ps:
+        res = res.union(s)
+    # print('end')
+    return res
 
-def get_max_nodes(component, in_node, out_node, algorithm, incremental=True):
-    comp_nodes = tuple(sorted(component.nodes))
-    bcc = (comp_nodes, in_node, out_node)
-    if incremental and bcc in BCC_VALUES:
-        return BCC_VALUES[bcc]
+
+def get_max_nodes(component, in_node, out_node, algorithm):
     # print(f"s:{s}, t:{t}")
     good_pairs = set()
     for path in nx.node_disjoint_paths(component, in_node, out_node):
@@ -230,7 +242,9 @@ def get_max_nodes(component, in_node, out_node, algorithm, incremental=True):
         for i in range(p):
             for j in range(i, p):
                 good_pairs.add((path[i], path[j]))
-    # print(len(list(graph.nodes)))
+    r_pairs = get_all_r_pairs(component)
+    print(len(component.nodes) * (len(component.nodes)-1), len(r_pairs))
+    good_pairs = good_pairs.union(r_pairs)
     possible_pairs = get_dis_pairs(in_node, out_node, component.nodes, good_pairs)  ### NOT REALLY DISJOINT
     # print(len(possible_pairs))
     pairs = [(x1, x2) for x1, x2 in possible_pairs if
@@ -239,24 +253,88 @@ def get_max_nodes(component, in_node, out_node, algorithm, incremental=True):
     # print('pairs', [(index_to_node[x], index_to_node[y]) for x,y in pairs])
     res = max_disj_set_upper_bound(component.nodes, pairs)
     # print('ret', res)
-    if incremental:
-        BCC_VALUES[bcc] = res
     return res
 
 
+def prefiltering_with_spqr_rules(component, in_node, out_node):
+    good_pairs, ex_pairs = set(), set()
+    good_pairs.update(shortest_path_filter(component, in_node, out_node))
+    # good_pairs.update(get_all_r_pairs(component))
+    # ex_pairs.update(get_all_spqr_pairs(component, in_node, out_node))
+    return good_pairs, ex_pairs
+
+#
+# def get_max_nodes(component, in_node, out_node, algorithm, incremental=True, prefiltering=prefiltering_with_spqr_rules):
+#     comp_nodes = tuple(sorted(component.nodes))
+#     bcc = (comp_nodes, in_node, out_node)
+#     #     if incremental and bcc in BCC_VALUES:
+#     #         return BCC_VALUES[bcc]
+#     # print(f"s:{s}, t:{t}")
+#     good_pairs, ex_pairs = prefiltering(component, in_node, out_node)
+#     # good_pairs = set()
+#
+#     # print(len(list(graph.nodes)))
+#     possible_pairs = get_dis_pairs(in_node, out_node, component.nodes,
+#                                    good_pairs.union(ex_pairs))  ### NOT REALLY DISJOINT
+#     # print(len(possible_pairs))
+#     ex_pairs.update([(x1, x2) for x1, x2 in possible_pairs if
+#                      (not algorithm(in_node, x1, x2, out_node, component)
+#                       and not algorithm(in_node, x2, x1, out_node, component))])
+#     # pairs = [(x1, x2) for x1, x2 in possible_pairs if
+#     #          (not algorithm(in_node, x1, x2, out_node, component)
+#     #           and not algorithm(in_node, x2, x1, out_node, component))]
+#     # print('pairs', [(index_to_node[x], index_to_node[y]) for x,y in pairs])
+#     res = max_disj_set_upper_bound(component.nodes, ex_pairs)
+#     # print('ret', res)
+#     #     if incremental:
+#     #         BCC_VALUES[bcc] = res
+#     return res
+
+
+def shortest_path_filter(component, in_node, out_node):
+    good_pairs = set()
+    for path in nx.node_disjoint_paths(component, in_node, out_node):
+        p = len(path)
+        for i in range(p):
+            for j in range(i, p):
+                good_pairs.add((path[i], path[j]))
+    return good_pairs
+
+
+def no_prefiltering(component, in_node, out_node):
+    return set(), set()
+
+
+def prefiltering_only_shortest_path(component, in_node, out_node):
+    good_pairs, ex_pairs = set(), set()
+    good_pairs.update(shortest_path_filter(component, in_node, out_node))
+    return good_pairs, ex_pairs
+
+
+def spqr_rules(component, in_node, out_node):
+    return {}
+
+
+def prefiltering(component, in_node, out_node):
+    good_pairs, ex_pairs = set(), set()
+    good_pairs.update(shortest_path_filter(component, in_node, out_node))
+    ex_pairs.update(spqr_rules(component, in_node, out_node))
+    return good_pairs, ex_pairs
+
+
 def ex_pairs_using_reg_flow(state, G, target):
-    return ex_pairs(state, G, target, has_flow)
+    return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, has_flow))
 
 
-def ex_pairs_using_pulp_flow(state, G, target):
-    return ex_pairs(state, G, target, flow_linear_programming_pulp)
+def ex_pairs_using_sage_flow(state, G, target):
+    return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, sage_flow))
 
 
 def ex_pairs_using_brute_force(state, G, target):
-    return ex_pairs(state, G, target, is_legit_shimony_pair)
+    return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, is_legit_shimony_pair))
 
 
-def count_nodes_bcc_testy(state, G, target):
+def calc_comps(state, G, target, algorithm):
     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
                                                                                                         G, target)
     if relevant_comps == -1:
@@ -272,7 +350,7 @@ def count_nodes_bcc_testy(state, G, target):
 
     n = len(relevant_comps)
 
-    relevant_nodes = 1
+    comps_hs = []
     bcc_path_size = 1
     for i in range(n):
         # print('i: ', i)
@@ -290,57 +368,153 @@ def count_nodes_bcc_testy(state, G, target):
         # print('here1')
         graph = reach_nested.subgraph(comp)
         # print('++++comp', [index_to_node[x] for x in comp])
-        to_add = len(list(graph.nodes))
-        # print('here3', to_add)
-        relevant_nodes += to_add - 1
-        # print(bcc_path_size - ex_nodes)
-        # if to_add > 0:
-        #     print(to_add, len(comp), n)
-    # print('####################### ', bcc_path_size, relevant_nodes)
-    return relevant_nodes
+        comp_h = algorithm(graph, in_node, out_node)
+        comps_hs += [BiCompEntry(in_node, out_node, comp, comp_h)]
+    return comps_hs
 
 
 def ex_pairs(state, G, target, algorithm):
-    reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
-                                                                                                        G, target)
-    if relevant_comps == -1:
-        return -1  # no path
-    cut_node_dict = {}
-    for node in reachables:
-        comps = bcc_dict[node]
-        # if node in more than 1 component, its a cut node
-        if len(comps) > 1:
-            for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
-                cut_node_dict[(c1, c2)] = node
-                cut_node_dict[(c2, c1)] = node
-
-    n = len(relevant_comps)
-
-    relevant_nodes = 1
-    bcc_path_size = 1
-    for i in range(n):
-        # print('i: ', i)
-        comp = relevant_comps[i]
-        # print(f"compppp: {sorted(comp)}")
-        bcc_path_size += len(comp) - 1
-        # getting cut nodes
-        if i == 0:
-            in_node = current_node
-        else:
-            in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
-        if i == n - 1:
-            out_node = target
-        else:
-            out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
-        # print('here1')
-        graph = reach_nested.subgraph(comp)
-        # print(f"graph: {sorted(graph.nodes)}")
-        # print('++++comp', [index_to_node[x] for x in comp])
-        to_add = get_max_nodes(graph, in_node, out_node, algorithm)
-        # print('here3', to_add)
-        relevant_nodes += to_add - 1
-        # print(bcc_path_size - ex_nodes)
-        # if to_add > 0:
-        #     print(to_add, len(comp), n)
-    # print('####################### ', bcc_path_size, relevant_nodes)
+    comp_hs = calc_comps(state, G, target, algorithm)
+    relevant_nodes = 1 + sum([c.h - 1 for c in comp_hs])
     return relevant_nodes
+
+
+def ex_pairs_incremental(state, G, target, algorithm):
+    current_node = state.current
+    if current_node == target:
+        return 0
+    if not state.bccs:
+        state.bccs = calc_comps(state, G, target, algorithm)
+        # insert as object
+    else:
+        bccs = state.bccs
+        current_comp_in = bccs[0].in_node
+        if current_comp_in != current_node:
+            print('!!!!!!!!!!!!!!!!!!!!!', current_node in bccs[0].nodes)
+            first_comp_nodes = bccs[0].nodes
+            p_availables = list(intersection(state.available_nodes, first_comp_nodes)) + [current_node]
+            pseudo_state = State(current_node, [state.path[-2], current_node], p_availables)
+            pseudo_target = bccs[0].out_node
+            pseudo_G = G.subgraph(first_comp_nodes)
+            extra_comps = calc_comps(pseudo_state, pseudo_G, pseudo_target, algorithm)
+            state.print()
+            state.print_bccs()
+            state.bccs = extra_comps + bccs[1:]
+            # insert as object
+    state.print()
+    state.print_bccs()
+    relevant_nodes = 1 + sum([c.h - 1 for c in state.bccs])
+    return relevant_nodes
+
+
+
+def ex_pairs_using_reg_flow_incremental(state, G, target):
+    return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, has_flow))
+
+
+def ex_pairs_using_sage_flow_incremental(state, G, target):
+    return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, sage_flow))
+
+
+def ex_pairs_using_brute_force_incremental(state, G, target):
+    return ex_pairs_incremental(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, is_legit_shimony_pair))
+
+#
+# def count_nodes_bcc_testy(state, G, target):
+#     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+#                                                                                                         G, target)
+#     if relevant_comps == -1:
+#         return -1  # no path
+#     cut_node_dict = {}
+#     for node in reachables:
+#         comps = bcc_dict[node]
+#         # if node in more than 1 component, its a cut node
+#         if len(comps) > 1:
+#             for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+#                 cut_node_dict[(c1, c2)] = node
+#                 cut_node_dict[(c2, c1)] = node
+#
+#     n = len(relevant_comps)
+#
+#     relevant_nodes = 1
+#     bcc_path_size = 1
+#     for i in range(n):
+#         # print('i: ', i)
+#         comp = relevant_comps[i]
+#         bcc_path_size += len(comp) - 1
+#         # getting cut nodes
+#         if i == 0:
+#             in_node = current_node
+#         else:
+#             in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+#         if i == n - 1:
+#             out_node = target
+#         else:
+#             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+#         # print('here1')
+#         graph = reach_nested.subgraph(comp)
+#         # print('++++comp', [index_to_node[x] for x in comp])
+#         to_add = len(list(graph.nodes))
+#         # print('here3', to_add)
+#         relevant_nodes += to_add - 1
+#         # print(bcc_path_size - ex_nodes)
+#         # if to_add > 0:
+#         #     print(to_add, len(comp), n)
+#     # print('####################### ', bcc_path_size, relevant_nodes)
+#     return relevant_nodes
+
+
+# def ex_pairs(state, G, target, algorithm, prefiltering=prefiltering_with_spqr_rules, incremental=True):
+#     reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node = bcc_thingy(state,
+#                                                                                                         G, target)
+#     if relevant_comps == -1:
+#         return -1  # no path
+#     cut_node_dict = {}
+#     for node in reachables:
+#         comps = bcc_dict[node]
+#         # if node in more than 1 component, its a cut node
+#         if len(comps) > 1:
+#             for c1, c2 in [(a, b) for idx, a in enumerate(comps) for b in comps[idx + 1:]]:
+#                 cut_node_dict[(c1, c2)] = node
+#                 cut_node_dict[(c2, c1)] = node
+#
+#     n = len(relevant_comps)
+#     # print("relevant_comps  ", relevant_comps)
+#     # print("relevant_comps_index    ", relevant_comps_index)
+#     # print("cutttt    ", cut_node_dict)
+#     relevant_nodes = 1
+#     bcc_path_size = 1
+#     for i in range(n):
+#         # print('i: ', i)
+#         comp = relevant_comps[i]
+#         bcc_path_size += len(comp) - 1
+#         # getting cut nodes
+#         if i == 0:
+#             in_node = current_node
+#         else:
+#             in_node = cut_node_dict[(relevant_comps_index[i - 1], relevant_comps_index[i])]
+#         if i == n - 1:
+#             out_node = target
+#         else:
+#             out_node = cut_node_dict[(relevant_comps_index[i], relevant_comps_index[i + 1])]
+#         # print(comp, in_node, out_node)
+#         comp_nodes = tuple(sorted(comp))
+#         bcc = (comp_nodes, in_node, out_node)
+#
+#         if incremental and bcc in BCC_VALUES:
+#             print('noice')
+#             to_add = BCC_VALUES[bcc]
+#         else:
+#             # print('here1')
+#             graph = reach_nested.subgraph(comp)
+#             # print('++++comp', [index_to_node[x] for x in comp])
+#             to_add = get_max_nodes(graph, in_node, out_node, algorithm, prefiltering=prefiltering)
+#             BCC_VALUES[bcc] = to_add
+#
+#         # print('here3', to_add)
+#         relevant_nodes += to_add - 1
+#         # print(bcc_path_size - ex_nodes)
+#         # if to_add > 0:
+#         #     print(to_add, len(comp), n)
+#     # print('####################### ', bcc_path_size, relevant_nodes)
+#     return relevant_nodes

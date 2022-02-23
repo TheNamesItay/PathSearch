@@ -69,7 +69,7 @@ def build_small_grid():
         graph.nodes[node]["constraint_nodes"] = [node]
 
     update_index_to_node(index_to_node)
-    return [(graph, node_to_index[(0, 0)], node_to_index[(4, 4)])]
+    return 'small grid', graph, node_to_index[(0, 0)], node_to_index[(4, 4)]
 
 
 def build_small_grid2():
@@ -100,7 +100,7 @@ def build_small_grid2():
     for node in graph.nodes:
         graph.nodes[node]["constraint_nodes"] = [node]
 
-    return mat, graph, node_to_index[(0, 0)], node_to_index[(4, 4)]
+    return mat, graph, node_to_index[(0, 0)], node_to_index[(4, 4)], index_to_node, node_to_index
 
 
 def build_small_grid_test():
@@ -164,7 +164,7 @@ def build_heuristic_showcase(n):
     g.add_edge(short_path_line2[-1], t)
     g.add_edge(path_line[-1], t)
 
-    return g, s, t
+    return f'showcase {n}', g, s, t
 
 
 def generate_random_grid(height, width, block_p):
@@ -213,7 +213,7 @@ def generate_grid(grid):
     for node in graph.nodes:
         graph.nodes[node]["constraint_nodes"] = [node]
     # print_mat(grid, index_to_node)
-    return grid, graph, start, target
+    return grid, graph, start, target, index_to_node
 
 
 def generate_grids(num_of_runs, height, width, block_p):

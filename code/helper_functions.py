@@ -4,7 +4,7 @@ import random
 
 import matplotlib.pyplot as plt
 import networkx as nx
-import numpy
+import numpy as np
 from numpy import sort
 from scipy.optimize import linprog
 
@@ -12,9 +12,22 @@ from scipy.optimize import linprog
 CURRENT_NODE = 0
 PATH = 1
 AVAILABLE_NODES = 2
+BCC_DICT = 3
 NUM_OF_PAIRS = 5
 N = 0
 index_to_node = {}
+
+
+def all_pairs(lst):
+    res = set()
+    for i in range(len(lst)):
+        for j in range(len(lst)):
+            res.add((lst[i], lst[j]))
+    return res
+
+
+def includes(big, small):
+    return not [x for x in small if x not in big]
 
 
 def diff(li1, li2):
@@ -60,57 +73,10 @@ def display_grid(path, g):
         plt.show()
 
 
-# def get_random_graph(num_of_nodes, prob_of_edge):
-#     path = []
-#     new_graph = nx.fast_gnp_random_graph(num_of_nodes, prob_of_edge)
-#     print(new_graph.nodes)
-#     while True:
-#         indexes = range(num_of_nodes)
-#         start = random.choice(indexes)
-#         target = random.choice(indexes)
-#         if start == target:
-#             print(start, target)
-#             continue
-#         try:
-#             path = nx.shortest_path(new_graph, source=start, target=target)
-#             break
-#         except:
-#             continue
-#     print(path)
-#     for node in new_graph.nodes:
-#         new_graph.nodes[node]["constraint_nodes"] = [node]
-#     return new_graph, start, target
-#
-
-# def generate_graphs(num_of_runs, num_of_nodes, prob_of_edge):
-#     return [get_random_graph(num_of_nodes, prob_of_edge) for i in range(num_of_runs)]
-
-
 def print_mat(mat, dict):
     mat = [[(dict[(i, j)] if mat[i][j] else 0) for i in range(len(mat[0]))] for j in range(len(mat))]
     for arr in mat:
         print(arr)
-
-
-# def get_directed_graph(g):
-#     g_new = nx.DiGraph()
-#     d = list(g.nodes).index
-#     for node in g.nodes:
-#         g_new.add_node(node)
-#     for (st, tt) in g.edges:
-#         s = d(st)
-#         t = d(tt)
-#         # print('s-', s, ' t-', t)
-#         node1 = s + t + "'"
-#         node2 = s + t + "''"
-#         g.add_node(node1)
-#         g.add_node(node2)
-#         g.add_edge(s, node1)
-#         g.add_edge(t, node1)
-#         g.add_edge(node2, s)
-#         g.add_edge(node2, s)
-#         g.add_node(node1, node2)
-#     return g_new
 
 
 def get_vertex_disjoint_directed(g):
@@ -135,37 +101,6 @@ def get_key(val, dict):
         return a[b.index(val)]
     except Exception as e:
         return -1
-
-#
-# def just_grid(grid):
-#     height = len(grid)
-#     width = len(grid[0])
-#     path = []
-#     graph = nx.Graph()
-#     index_to_node = {}
-#     node_to_index = {}
-#     index = 0
-#
-#     # set up edges
-#     for i in range(height):
-#         for j in range(width):
-#             if grid[i][j]:
-#                 continue
-#             node = (i, j)
-#             index_to_node[index] = node
-#             graph.add_node(index)
-#             node_to_index[(i, j)] = index
-#             if i > 0 and not grid[i - 1][j]:
-#                 graph.add_edge(index, node_to_index[(i - 1, j)])
-#             if j > 0 and not grid[i][j - 1]:
-#                 graph.add_edge(index, node_to_index[(i, j - 1)])
-#             index += 1
-#
-#     for node in graph.nodes:
-#         graph.nodes[node]["constraint_nodes"] = [node]
-#
-#     return graph, index_to_node, node_to_index
-
 
 comp_colors = [
     # (240, 248, 255),
@@ -210,120 +145,6 @@ comp_colors = [
     (138, 54, 15),
     (138, 51, 36),
 ]
-#
-#
-# def generate_grid_fortesting(mat):
-#     height = len(mat)
-#     width = len(mat[0])
-#     path = []
-#     graph = nx.Graph()
-#     index_to_node = {}
-#     node_to_index = {}
-#     node_index = -1
-#     # set up edges
-#     for i in range(height):
-#         for j in range(width):
-#             if mat[i][j]:
-#                 continue
-#             node_index += 1
-#             graph.add_node(node_index)
-#             node_to_index[(i, j)] = node_index
-#             index_to_node[node_index] = (i, j)
-#             if i > 0 and not mat[i - 1][j]:
-#                 graph.add_edge(node_index, node_to_index[(i - 1, j)])
-#             if j > 0 and not mat[i][j - 1]:
-#                 graph.add_edge(node_index, node_to_index[(i, j - 1)])
-#
-#     indexes = range(len(graph.nodes))
-#
-#     graph.add_node('s')
-#     for i in indexes[:len(mat[0])]:
-#         graph.add_edge('s', i)
-#     graph.add_node('t')
-#     for i in indexes[-len(mat[0]):]:
-#         graph.add_edge(i, 't')
-#
-#     try:
-#         path = nx.shortest_path(graph, 's', 't')
-#         start = path[1]
-#         target = path[-2]
-#     except Exception as e:
-#         raise e
-#
-#     graph.remove_node('s')
-#     graph.remove_node('t')
-
-    # # choose for path
-    # while True:
-    #     start = list(graph.nodes)[random.choice(indexes[:len(mat[0])])]
-    #     target = list(graph.nodes)[random.choice(indexes[-len(mat[0]):])]
-    #     if start == target:
-    #         print(start, target)
-    #         continue
-    #     try:
-    #         path = nx.shortest_path(graph, source=start, target=target)
-    #         print(start, target)
-    #         break
-    #     except:
-    #         continue
-    # print(path)
-
-    # for node in graph.nodes:
-    #     graph.nodes[node]["constraint_nodes"] = [node]
-    # # print_mat(grid, index_to_node)
-    # return mat, graph, start, target, index_to_node, node_to_index
-
-
-# def max_disj_set_lp(nodes, pairs):
-#     lhs_ineq = [[1 if x in (s, t) else 0 for x in nodes] for s, t in pairs]
-#     rhs_ineq = [1] * len(pairs)
-#
-#     obj = [-1] * len(nodes)
-#
-#     bnd = [(0, 1)] * len(nodes)
-#
-#     # print("nv", nv, "ne", ne, "len", len(vertices_lhs_eq), len(vertices_rhs_eq))
-#
-#     opt = linprog(c=obj, A_ub=lhs_ineq, b_ub=rhs_ineq,
-#                   bounds=bnd,
-#                   method="revised simplex")
-#     # print(opt)
-#     return -opt.fun
-#
-#
-# def max_disj_set_naive(nodes, pairs):
-#     g = nx.Graph()
-#     for x in nodes:
-#         g.add_node(x)
-#     for s, t in pairs:
-#         g.add_edge(s, t)
-#     degrees = g.degree
-#     counter = 0
-#     # print(sort([degrees[x] for x in g.nodes]))
-#     while g.nodes:
-#         x = min(g.nodes, key=lambda x: degrees[x])
-#         ns = list(g.neighbors(x))
-#         for n in ns:
-#             g.remove_node(n)
-#         g.remove_node(x)
-#         counter += 1
-#     return counter
-
-
-# def max_disj_set_naive_upper_bound(nodes, pairs):
-#     g = nx.complete_graph(nodes).to_undirected()
-#     for s, t in pairs:
-#         g.remove_edge(s, t)
-#     degrees = g.degree
-#     counter = 0
-#     while g.nodes:
-#         x = min(g.nodes, key=lambda x: degrees[x])
-#         ns = list(g.neighbors(x))
-#         for n in ns:
-#             g.remove_node(n)
-#         g.remove_node(x)
-#         counter += 1
-#     return len(nodes) - counter
 
 
 def random_combination(iterable, r, n):
@@ -338,26 +159,6 @@ def get_clique(node, graph):
     else:
         x = max(g.nodes, key=lambda x: g.degree[x])
         return [node] + get_clique(x, g)
-
-#
-#
-# def get_clique(node, graph):
-#     nodes = list(graph.neighbors(node)) + [node]
-#     l = len(nodes)
-#     print('---------', l, node)
-#     if l == 1:
-#         return [node]
-#     tries = 10
-#     for i in range(len(nodes)):
-#         iter = itertools.combinations(nodes, l - i)
-#         n = int(math.factorial(l) / math.factorial(i))
-#         for subset in random_combination(iter, tries, n):
-#             # print(l-i,subset)
-#             if is_subclique(graph, subset):
-#                 # print("RES: ", subset, graph.degree[node], len(subset))
-#                 return subset
-#     # print("---")
-#     # print(len(subset))
 
 
 def is_subclique(G, nodelist):
@@ -428,8 +229,8 @@ def max_bad_set_upper_bound(nodes, pairs):
 
 
 def bcc_thingy(state, G, target):
-    current_node = state[CURRENT_NODE]
-    availables = state[AVAILABLE_NODES] + (current_node,)
+    current_node = state.current
+    availables = state.available_nodes + (current_node,)
     nested = G.subgraph(availables)
     reachables = nx.descendants(nested, source=current_node)
     reachables.add(current_node)
@@ -563,3 +364,63 @@ def find_path(flow, s, t, g):
                 path += [cur_v]
                 break
     return path
+
+
+def triconnected_components(component):
+    "Return the triconnected components of the graph."
+    print('start')
+    comp_nodes = list(component.nodes)
+    components = []
+    if len(component) < 3:
+        return [comp_nodes]
+    try:
+        cuts = next(nx.all_node_cuts(
+            component,
+            k=2))
+        if len(cuts) > 2:
+            return [comp_nodes]
+        assert len(cuts) == 2
+        comp_min_cuts = component.copy()
+        comp_min_cuts.remove_nodes_from(cuts)
+        subcomponents = list(nx.connected_components(comp_min_cuts))
+        if len(subcomponents) == 1:
+            return [comp_nodes]
+        components += subcomponents
+        components.append(cuts)
+    except StopIteration:
+        return [comp_nodes]
+    return components
+
+def draw_grid(folder_name, pic_name, graph, mat, start, target, index_to_node):
+    start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+    start_path = (start,)
+    state = (start, start_path, start_available)
+    t = index_to_node[target]
+    _, _, comps, _, _, _ = bcc_thingy(state, graph, target)
+    current_node = index_to_node[state[0]]
+    path = [index_to_node[x] for x in state[1]]
+    height = len(mat)
+    width = len(mat[0])
+    data = [[(0, 0, 0) if mat[j][i] else (255, 255, 255) for j in range(len(mat[0]))] for i in range(len(mat))]
+    if comps:
+        for i in range(len(comps)):
+            color = comp_colors[i % len(comp_colors)]
+            comp = comps[i]
+            for c in comp:
+                node = index_to_node[c]
+                data[node[1]][node[0]] = color
+        for v in path:
+            data[v[1]][v[0]] = (50, 50, 150)
+    data[current_node[1]][current_node[0]] = (255, 0, 255)
+    data[t[1]][t[0]] = (0, 255, 0)
+
+    fig, ax = plt.subplots()
+    ax.imshow(data, )
+
+    # draw gridlines
+    ax.grid(which='major', axis='both', linestyle='-', color='k', linewidth=0.5)
+    ax.set_xticks(np.arange(-.5, width, 1))
+    ax.set_yticks(np.arange(-.5, height, 1))
+    plt.title('graph ' + str(pic_name))
+    save_results_to = "D:/Heuristic Tests/graphs/"
+    fig.savefig(save_results_to + f'graph_{str(pic_name)}.png')

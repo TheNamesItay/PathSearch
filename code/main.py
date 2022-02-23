@@ -1,7 +1,9 @@
+import matplotlib.pyplot as plt
 import networkx as nx
 import time as t
 from multiprocessing import Process
 
+from code.state import State
 from graph_builder import *
 from heuristics import *
 # from astar import limited_AStar as astar
@@ -16,46 +18,45 @@ AVAILABLE_NODES = 2
 
 def get_goal_func(target):
     def goal_check_path(state):  # graph is original graph of nodes!
-        return state[CURRENT_NODE] == target
+        return state.current == target
 
     return goal_check_path
 
 
 def run(heuristic, graph, start, target, cutoff, timeout):
-    reset_bcc_values()
     start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
     start_path = (start,)
     start_state = (start, start_path, start_available)
     h = (lambda x: heuristic(x, graph, target))
-    strong_h = (lambda x: ex_pairs(x, graph, target))
+    # strong_h = (lambda x: ex_pairs(x, graph, target, ))
     end_state, data = max_weighted_a_star(graph,
                                           start_state,
                                           get_goal_func(target),
                                           h,
                                           g)
     expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen = data
-    return end_state[
-               PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen
+    return end_state.path if end_state != -1 else [], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen
 
 
-def run_weighted(heuristic, graph, start, target, weight, cutoff, timeout):
-    reset_bcc_values()
+def run_weighted(heuristic, graph, start, target, weight, cutoff, timeout, is_incremental):
     start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
     start_path = (start,)
-    start_state = (start, start_path, start_available)
+#     bcc_dict = {}
+    start_state = State(start, start_path, start_available)
     h = (lambda x: heuristic(x, graph, target))
-    strong_h = (lambda x: ex_pairs(x, graph, target))
+    # stron = (lambda x: ex_pairs(x, graph, target))
     end_state, data = max_weighted_a_star(graph,
                                           start_state,
                                           get_goal_func(target),
                                           h,
                                           g,
-                                          weight=weight)
-    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen = data
-    return end_state[
-               PATH], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen
-
-
+                                          is_incremental,
+                                          weight=weight,
+                                         cutoff=cutoff,
+                                          timeout=timeout
+                                         )
+    expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen, generated_nodes = data
+    return end_state.path if end_state != -1 else [], expansions, runtime, nodes_extracted_heuristic_values, nodes_extracted_path_len, nodes_chosen, generated_nodes
 # def process_run(
 #         name,
 #         heuristic,
@@ -113,7 +114,7 @@ def test_heuristics(heuristic_name_func_pairs, cutoff, timeout, generate_func):
     for graph, start, target in graphs:
         print(f"GRAPH {graph_i}:")
         for name, h in heuristic_name_func_pairs:
-            path, expansions, runtime, hs, pl, ns = run(h, graph, start, target, cutoff, timeout)
+            path, expansions, runtime, hs, pl, ns, ng = run_weighted(h, graph, start, target, 1, cutoff, timeout)
             sum_path_lengths[name] += len(path)
             sum_expansions[name] += expansions
             sum_runtimes[name] += runtime
@@ -179,6 +180,7 @@ def display_hs(graph_i, heuristic_name_func_pairs, hs_per_run, pl_per_run):
     plt.title('graph ' + str(graph_i))
     plt.legend()
     plt.show()
+    plt.savefig('fig.png')
 
 
 def grid_setup(runs, height, width, block_p):
@@ -193,8 +195,9 @@ heuristics = [
     # ["brute force ex pairs", ex_pairs_using_brute_force],
     ["bcc nodes", count_nodes_bcc],
     # ["test bcc nodes", count_nodes_bcc_testy],
+    ["ex pairs not incremental", ex_pairs_using_reg_flow],
     ["ex pairs using reg flow", ex_pairs_using_reg_flow],
-    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
+    # ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
     # ["ex pairs using LP", ex_pairs_using_3_flow],
 
 ]
