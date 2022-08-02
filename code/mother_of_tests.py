@@ -15,8 +15,8 @@ runs_per_params = 10
 heuristics = [
     ["bcc incremental", count_nodes_bcc, True],
     ["bcc", count_nodes_bcc, False],
-    # ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
-    # ["ex pairs no filter", ex_pairs_with_no_prefiltering],
+    ["ex pairs using 3 flow", ex_pairs_using_pulp_flow],
+    ["ex pairs no filter", ex_pairs_with_no_prefiltering],
 ]
 weights = [1]  # [0.7 + 0.1 * i for i in range(6)]
 grid_sizes = [(15 * i, 15 * i) for i in range(1,2)]
