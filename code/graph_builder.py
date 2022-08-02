@@ -6,6 +6,7 @@ from heuristics import update_index_to_node
 
 index_to_node = {}
 
+
 def build_room_graph():
     graph = nx.Graph()
     node_index = 0
@@ -38,6 +39,7 @@ def build_room_graph():
         graph.nodes[node]["constraint_nodes"] = [node]
 
     return [(graph, index_to_node[(0, 0)], index_to_node[(8, 13)])]
+
 
 def build_small_grid():
     global index_to_node
@@ -141,10 +143,10 @@ def build_heuristic_showcase(n):
     short_path_line1 = list(range(1 + int(n / 2), int(n / 2 + n / 8)))
     short_path_line2 = list(range(int(n / 2 + n / 8), int(n / 2 + n / 4)))
     blocky = list(range(int(n / 2 + n / 4), n))
-    print(path_line)
-    print(short_path_line1)
-    print(short_path_line2)
-    print(blocky)
+    #     print(path_line)
+    #     print(short_path_line1)
+    #     print(short_path_line2)
+    #     print(blocky)
     g = nx.Graph()
     for i in list(range(n + int(n / 8))) + [4 * n]:
         g.add_node(i, constraint_nodes=[i])
@@ -262,3 +264,76 @@ def generate_grid2(grid):
         graph.nodes[node]["constraint_nodes"] = [node]
     # print_mat(grid, index_to_node)
     return grid, graph, start, target, index_to_node, node_to_index
+
+
+def generate_hard_grids(num_of_runs, height, width, block_p, is_snake=False):
+    return [generate_hard_grid(height, width, block_p, is_snake) for i in range(num_of_runs)]
+
+
+def generate_hard_grid(height, width, block_p, is_snake=False):
+    while True:
+        try:
+            grid = [[(0 if random.uniform(0, 1) > block_p else 1) for i in range(width)] for j in range(height)]
+            grid[0][0] = 0
+            grid[height - 1][width - 1] = 0
+            height = len(grid)
+            width = len(grid[0])
+            path = []
+            graph = nx.Graph()
+            index_to_node = {}
+            node_index = 0
+            node_to_index = {}
+            # set up edges
+            for i in range(height):
+                for j in range(width):
+                    if grid[i][j]:
+                        continue
+                    graph.add_node(node_index)
+                    node_to_index[(i, j)] = node_index
+                    index_to_node[node_index] = (i, j)
+                    if i > 0 and not grid[i - 1][j]:
+                        graph.add_edge(node_index, node_to_index[(i - 1, j)])
+                    if j > 0 and not grid[i][j - 1]:
+                        graph.add_edge(node_index, node_to_index[(i, j - 1)])
+                    node_index += 1
+
+            # choose for path
+            n = len(index_to_node.keys())
+            tries = 200
+            start = node_to_index[(0, 0)]
+            target = node_to_index[(height - 1, width - 1)]
+            path = nx.shortest_path(graph, source=start, target=target)
+            # print(path)
+
+            for node in graph.nodes:
+                graph.nodes[node]["constraint_nodes"] = list(graph.neighbors(node)) if is_snake else [node]
+            break
+        except:
+            continue
+    return grid, graph, start, target, index_to_node
+
+
+def generate_maze(n, bs):
+    mat = [[0] * n] * n
+    indexes = flatten(
+        [[(i, j) for i in range(n) if (i != 0 or j != 0) and (i != n - 1 or j != n - 1) and mat[i][j] == 0] for j in
+         range(n)])
+    random.shuffle(indexes)
+    for i, j in indexes[:bs]:
+        mat_temp = [[1 if i_ == i and j_ == j else mat[i_][j_] for i_ in range(n)] for j_ in range(n)]
+        _, graph, _, _, _ = generate_grid(mat_temp)
+        if len(list(nx.connected_components(graph))) == 1:
+            mat = mat_temp
+    grid, graph, start, target, index_to_node = generate_grid(mat)
+    return grid, graph, 0, len(index_to_node) - 1, index_to_node
+
+
+def generate_hypercube(n):
+    cube = nx.hypercube_graph(n)
+    node_to_index = {}
+    i = 0
+    for node in cube.nodes:
+        cube.nodes[node]["constraint_nodes"] = list(cube.neighbors(node))
+        node_to_index[node] = i
+        i += 1
+    return cube, node_to_index

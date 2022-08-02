@@ -3,10 +3,10 @@ import csv
 from read_csv import read_raw_csv
 from main import *
 
-SHOWCASE_CSV = 'D:/sage/SageMath 9.3/dump/test_showcases2.csv'
-GRAPHS_FILENAME = 'D:/sage/SageMath 9.3/dump/saved_graphs.txt'
-CSV_FILENAME = 'D:/sage/SageMath 9.3/dump/raw_results2.csv'
-AVG_CSV = 'D:/sage/SageMath 9.3/dump/test_results2.csv'
+SHOWCASE_CSV = 'test_showcases2.csv'
+GRAPHS_FILENAME = 'saved_graphs.txt'
+CSV_FILENAME = 'raw_results2.csv'
+AVG_CSV = 'test_results2.csv'
 
 CUTOFF = 200000
 TIMEOUT = 1000
@@ -55,7 +55,7 @@ def save_heuristic_plot(folder_name, graph_i, hs_per_run):
     plt.title('graph ' + str(graph_i))
     plt.legend()
     # plt.show()
-    save_results_to = 'D:\sage\SageMath 9.3\dump'
+    save_results_to = './'
 
     fig.savefig(save_results_to + f'scatter_{str(graph_i)}.png')
 
@@ -114,27 +114,27 @@ def test_heuristics(raw_csv_file_name, graphs_folder, scatter_folder):
 
 
 def test_showcases(raw_csv_file_name, graphs_folder, scatter_folder):
-    sizes = [20 * i for i in range(1, 20)]
+    sizes = [2000 * i for i in range(1, 2)]
     graphs = [build_small_grid()] + [build_heuristic_showcase(x) for x in sizes]
     runs = len(graphs)
-    names = [name for name, h in heuristics]
+    names = [name for name, h, _ in heuristics]
     sum_runtimes = dict.fromkeys(names, 0)
     sum_expansions = dict.fromkeys(names, 0)
     sum_path_lengths = dict.fromkeys(names, 0)
     hs_per_run = {}
     ls_per_run = {}
     expansions_per_run = {}
-    for name, _ in heuristics:
+    for name, _, _ in heuristics:
         hs_per_run[name] = dict()
         ls_per_run[name] = dict()
         expansions_per_run[name] = dict()
     for w in weights:
         print('w == ', w)
         for showcase_name, graph, start, target in graphs:
-            # print(f"GRAPH {showcase_name}:")
-            for name, h in heuristics:
+            print(f"GRAPH {showcase_name}:")
+            for name, h, incremental in heuristics:
                 path, expansions, runtime, hs, ls, ns, ng = run_weighted(h, graph, start, target, w, CUTOFF, TIMEOUT,
-                                                                         True)
+                                                                         incremental)
                 sum_path_lengths[name] += len(path)
                 sum_expansions[name] += expansions
                 sum_runtimes[name] += runtime
@@ -164,4 +164,4 @@ def mother_of_tests(raw_csv_file_name, avg_csv, graphs_folder, scatter_folder, g
         read_raw_csv(raw_csv_file_name, avg_csv)
 
 
-mother_of_tests(CSV_FILENAME, AVG_CSV, 'graphs', 'scatters', grids=True, showcases=False)
+mother_of_tests(CSV_FILENAME, AVG_CSV, 'graphs', 'scatters', grids=False, showcases=True)

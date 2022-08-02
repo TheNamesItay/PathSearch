@@ -10,6 +10,7 @@ from scipy.optimize import linprog
 
 from state import State
 
+# helper functions
 
 CURRENT_NODE = 0
 PATH = 1
@@ -184,7 +185,7 @@ def get_clique_bf(node, graph):
                 return subset
 
 
-def max_disj_set_upper_bound(nodes, pairs):
+def max_disj_set_upper_bound(nodes, pairs, x_filter=False, y_filter=False, og_g=None):
     g = nx.Graph()
     for x in nodes:
         g.add_node(x)
@@ -192,6 +193,58 @@ def max_disj_set_upper_bound(nodes, pairs):
         g.add_edge(s, t)
     degrees = g.degree
     counter = 0
+    check = 0
+    # print("nodes", len(list(g.nodes)))
+    # print("pairs", pairs)
+    while g.nodes:
+        x = max(g.nodes, key=lambda x: degrees[x])
+        c = get_clique(x, g)
+        # print(len(c))
+        if len(c) == 1:
+            break
+        for n in c:
+            g.remove_node(n)
+        counter += 1
+    if og_g:
+        og_g = og_g.subgraph(g.nodes).copy()
+        if y_filter:
+            while og_g.nodes:
+                x = max(og_g.nodes, key=lambda x: og_g.degree[x])
+                if og_g.degree[x] < 3:
+                    break
+                # print('---------')
+                y = []
+                for n in [x] + list(random.sample(list(og_g.neighbors(x)), 3)):
+                    y += [n]
+                    g.remove_node(n)
+                    og_g.remove_node(n)
+#                 print([f for f in y])
+                counter += 3
+#                 check += 3
+        elif x_filter:
+            while og_g.nodes:
+                x = max(og_g.nodes, key=lambda x: og_g.degree[x])
+                if og_g.degree[x] < 4:
+                    break
+                for n in [x] + list(og_g.neighbors(x)):
+                    g.remove_node(n)
+                    og_g.remove_node(n)
+                counter += 4
+    counter += len(g.nodes)
+#     print("check: ", check)
+    # print('counter', counter)
+    # print('----------------------------------')
+    return counter
+
+
+def max_disj_set_upper_bound_actual_set(nodes, pairs):
+    g = nx.Graph()
+    for x in nodes:
+        g.add_node(x)
+    for s, t in pairs:
+        g.add_edge(s, t)
+    degrees = g.degree
+    s = []
     # print("nodes", len(list(g.nodes)))
     # print("pairs", pairs)
     while g.nodes:
@@ -200,10 +253,10 @@ def max_disj_set_upper_bound(nodes, pairs):
         # print(len(c))
         for n in c:
             g.remove_node(n)
-        counter += 1
+        s += [x]
     # print('counter', counter)
     # print('----------------------------------')
-    return counter
+    return s
 
 
 def max_bad_set_upper_bound(nodes, pairs):
@@ -230,6 +283,7 @@ def max_bad_set_upper_bound(nodes, pairs):
     return counter
 
 
+
 def bcc_thingy(state, G, target):
     current_node = state.current
     availables = state.available_nodes + (current_node,)
@@ -244,6 +298,13 @@ def bcc_thingy(state, G, target):
         if len(path) < 1:
             return -1, -1, -1, -1, -1, -1
     else:
+        # draw_grid('', 'path', graph, grid,  0, target, index_to_node, state.path)
+        # draw_grid('', 'comp nodes', graph, grid,  0, target, index_to_node, G.nodes)
+        # draw_grid('', 'available', graph, grid,  0, target, index_to_node, state.available_nodes)
+        # print('nodes:', [index_to_node[x] for x in G.nodes])
+        # print('path:', [index_to_node[x] for x in state.path])
+        # print('availables:', [index_to_node[x] for x in state.available_nodes])
+        # print(index_to_node[state.current], len(state.path), index_to_node[target])
         return -1, -1, -1, -1, -1, -1
 
     bcc_dict = {}
@@ -275,6 +336,7 @@ def bcc_thingy(state, G, target):
             added_comp = current_comp
 
     return reachables, bcc_dict, relevant_comps, relevant_comps_index, reach_nested, current_node
+
 
 
 def component_degree(comp, graph):
@@ -393,17 +455,17 @@ def triconnected_components(component):
         return [comp_nodes]
     return components
 
-def draw_grid(folder_name, pic_name, graph, mat, start, target, index_to_node):
-    start_available = tuple(diff(list(graph.nodes), graph.nodes[start]["constraint_nodes"]))
+def draw_grid(folder_name, pic_name, graph, mat, start, target, index_to_node, path=[]):
+    start_available = tuple(diff(list(graph.nodes), {start}))
     start_path = (start,)
     state = State(start, start_path, start_available)
     t = index_to_node[target]
     _, _, comps, _, _, _ = bcc_thingy(state, graph, target)
     current_node = index_to_node[state.current]
-    path = [index_to_node[x] for x in state.path]
+    path = [index_to_node[x] for x in  (tuple(path) if path else state.path)]
     height = len(mat)
     width = len(mat[0])
-    data = [[(0, 0, 0) if mat[j][i] else (255, 255, 255) for j in range(len(mat[0]))] for i in range(len(mat))]
+    data = [[(0, 0, 0) if mat[j][i] else (255, 255, 255) for j in range(len(mat))] for i in range(len(mat[0]))]
     if comps:
         for i in range(len(comps)):
             color = comp_colors[i % len(comp_colors)]
@@ -424,5 +486,34 @@ def draw_grid(folder_name, pic_name, graph, mat, start, target, index_to_node):
     ax.set_xticks(np.arange(-.5, width, 1))
     ax.set_yticks(np.arange(-.5, height, 1))
     plt.title('graph ' + str(pic_name))
-    save_results_to = "D:\sage\SageMath 9.3\dump"
-    fig.savefig(save_results_to + f'graph_{str(pic_name)}.png')
+    plt.show()
+#     save_results_to = f'{folder_name}/graph_{str(pic_name)}.png'
+#     fig.savefig(save_results_to)
+
+
+def remove_blocks(n, mat):
+    block_i = flatten([[(i, j) for i in range(len(mat)) if mat[i][j] == 1] for j in range(len(mat[0]))])
+    bis = random.sample(block_i, n)
+    return [[0 if (j,i) in bis else mat[j][i] for i in range(len(mat))] for j in range(len(mat[0]))]
+
+
+def remove_blocks_2(n, mat, og_mat):
+    block_i = flatten([[(i, j) for i in range(len(mat)) if mat[i][j] == 1 and og_mat[i][j] == 0] for j in range(len(mat[0]))])
+    print(len(block_i))
+    bis = random.sample(block_i, n)
+    return [[0 if (i,j) in bis else mat[i][j] for j in range(len(mat[0]))] for i in range(len(mat))]
+
+
+def remove_blocks_rectangles_2(n, mat, og_mat):
+    block_i = flatten([[(i, j) for i in range(len(mat)) if mat[i][j] == 1 and og_mat[i][j] == 0] for j in range(len(mat[0]))])
+    bis = []
+    for i in range(n):
+        coord = random.sample(block_i, 1)[0]
+        coord_x = coord[0]
+        coord_y = coord[1]
+        coord = int(coord_x/2)*2, int(coord_y/2)*2
+        bis += [coord]
+        block_i = [(x,y) for x,y in block_i if int(x/2)*2 != coord_x or int(y/2)*2 != coord_y]
+        if not block_i:
+            break
+    return [[0 if (int(i/2)*2, int(j/2)*2) in bis else mat[i][j] for j in range(len(mat[0]))] for i in range(len(mat))]

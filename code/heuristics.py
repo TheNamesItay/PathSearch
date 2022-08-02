@@ -1,6 +1,7 @@
 import networkx as nx
 
 # STATE = (CURRENT NODE, PATH, AVAILABLE NODES)
+from networkx import Graph
 from numpy import sort, math
 from scipy.optimize import linprog
 from pulp import *
@@ -211,16 +212,16 @@ def flow_linear_programming_pulp(s, x, y, t, g):
     #         print(v.name, "=", v.varValue)
     return prob.status == 1
 
-def get_all_r_pairs(comp):
-    # print('start')
-    comp_g = Graph(comp)
-    t = spqr_tree(comp_g)
-    ps = [all_pairs(list(g.networkx_graph().nodes)) for t, g in t if t == 'R']
-    res = set()
-    for s in ps:
-        res = res.union(s)
-    # print('end')
-    return res
+# def get_all_r_pairs(comp):
+#     # print('start')
+#     comp_g = Graph(comp)
+#     t = spqr_tree(comp_g)
+#     ps = [all_pairs(list(g.networkx_graph().nodes)) for t, g in t if t == 'R']
+#     res = set()
+#     for s in ps:
+#         res = res.union(s)
+#     # print('end')
+#     return res
 
 
 def get_max_nodes(component, in_node, out_node, algorithm):
@@ -330,10 +331,10 @@ def count_nodes_bcc(state, G, target, is_incremental=False):
     return ret
 
 
-def ex_pairs_using_sage_flow(state, G, target):
+def ex_pairs_using_sage_flow(state, G, target, is_incremental=False):
     if is_incremental:
-        return ex_pairs_incremental(state, G, target, lambda g, i, o: get_max_nodes(g, i, o, sage_flow))
-    return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, sage_flow))
+        return ex_pairs_incremental(state, G, target, lambda g, i, o: get_max_nodes(g, i, o, flow_linear_programming_pulp))
+    return ex_pairs(state, G, target, lambda g,i,o: get_max_nodes(g, i, o, flow_linear_programming_pulp))
 
 
 def calc_comps(state, G, target, algorithm):
