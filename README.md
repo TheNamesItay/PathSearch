@@ -20,7 +20,18 @@ h(state) = sum of degree(bcc) for bcc in P
 
 #### exclusion pairs::
 (u,v) is an exclusion pair for graph g, nodes x,y if theres no path in g from x to y through u,v
-h(state) = sum of degree(bcc) for bcc in P
+let P be path of bi-connected components that include a path from current node to target in the availables nodes graph,  
+h(state) = size of set of nodes which are *not* pairwise exclusive in bcc for bcc in P
+
+to calculate the pairs we have 4 main methods:
+- brute force
+- flow: 
+    regular flow: if there is no flow from (s and x) to (y and t) then theres no path from s to t through x and then y. 
+    3-flow: using linear programming, calc 3 flows. s->x, x->y, y->t
+    calc flow to check if theres a path through x,y then through y,x. if there isnt, its an ex pair.
+- SPQR: 
+    using the spqr tree data stracture, we can extract the pairs in linear time.
+  
 
 
 
@@ -53,24 +64,4 @@ expanded += nodes
 OPEN += nodes  
 expansion += 1
     
-## Exclusion Pairs Heuristic Algorithm
-state = (current node, path, available nodes) 
-
-####exclusion_pair_heuristic_in_b_component(b_component, exclusion_pair_bound)
-    h_val := b_component.size
-    exclusion_pair_graph := create_exclusion_pair_graph(b_component, exclusion_pair_bound)
-    while exclusion_pair_graph is not empty:
-        clique := get_clique(exclusion_pair_graph)
-        h_val := h_val - (clique.size - 1)
-        remove_clique(clique, exclusion_pair_graph)
-    return h_val
-
-      
-      
-      
-      
-      
-      
-      
-      
-      
+   
